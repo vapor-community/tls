@@ -47,6 +47,10 @@ extension SSL {
             }
         }
 
+        deinit {
+            SSL_CTX_free(cContext)
+        }
+
         public var cipherList: String {
             didSet {
                 SSL_CTX_set_cipher_list(cContext, cipherList)
@@ -105,7 +109,6 @@ extension SSL {
                 throw Error.checkPrivateKey(error)
             }
         }
-        
-        
+
     }
 }

@@ -17,6 +17,11 @@ extension SSL {
             self.cSSL = ssl
         }
 
+        deinit {
+            SSL_shutdown(cSSL)
+            SSL_free(cSSL)
+        }
+
         public func connect() throws {
             guard SSL_connect(cSSL) == Result.OK else {
                 throw Error.connect(SSL.error)

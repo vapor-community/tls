@@ -30,4 +30,9 @@ public final class SSL {
         )
         self.context = context
     }
+
+    deinit {
+        ERR_free_strings()
+        EVP_cleanup()
+    }
 }
