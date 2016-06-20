@@ -1,8 +1,12 @@
 import COpenSSL
 
-extension SSL {
-    public static func makeMethod(for mode: Mode) throws -> Method {
-        let method: Method
+public class Method {
+    public typealias CMethod = UnsafePointer<SSL_METHOD>
+
+    public let cMethod: CMethod
+
+    public init(mode: Mode) throws {
+        let method: CMethod
 
         switch mode {
         case .client:
@@ -12,13 +16,12 @@ extension SSL {
             }
             method = m
         case .server:
-            guard let m = SSLv23_client_method() else {
+            guard let m = SSLv23_method() else {
                 throw Error.methodCreation
             }
             method = m
         }
 
-        return method
+        cMethod = method
     }
-
 }
