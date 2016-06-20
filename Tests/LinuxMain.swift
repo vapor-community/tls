@@ -1,6 +1,6 @@
 import XCTest
-@testable import SecretSocksTestSuite
+@testable import SSLTestSuite
 
 XCTMain([
-     testCase(SecretSocksTests.allTests),
+     testCase(ContextTests.allTests),
 ])
