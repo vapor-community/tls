@@ -170,9 +170,9 @@ sudo apt-get install libssl-dev
 
 Travis builds Swift SSL on both Ubuntu 14.04 and macOS 10.11. Check out the `.travis.yml` file to see how this package is built and compiled during testing.
 
-## Fluent
+## Vapor
 
-This wrapper was created to power [Fluent](https://github.com/qutheory/fluent), an ORM for Swift. 
+This wrapper was created to power [Vapor](https://github.com/qutheory/vapor), an Web Framework for Swift. 
 
 ## Author
 
