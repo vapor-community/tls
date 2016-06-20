@@ -59,9 +59,9 @@ public final class Context {
         EVP_cleanup()
     }
 
-    public func verifyFile(_ file: String) throws {
-        guard NSFileManager.default().fileExists(atPath: file) else {
-            throw Error.file("\(file) doesn't exist.")
+    public func verifyFile(_ filePath: String) throws {
+        guard NSFileManager.fileExists(at: filePath) else {
+            throw Error.file("\(filePath) doesn't exist.")
         }
     }
 
@@ -106,7 +106,6 @@ public final class Context {
         }
     }
 
-
     public func usePrivateKey(file privateKeyFile: String) throws {
         try verifyFile(privateKeyFile)
 
@@ -118,5 +117,18 @@ public final class Context {
             throw Error.checkPrivateKey(error)
         }
     }
+}
 
+extension NSFileManager {
+    static func fileExists(at path: String) -> Bool {
+        #if os(Linux)
+            let manager = NSFileManager.defaultManager()
+        #else
+            let manager = NSFileManager.default()
+        #endif
+
+        var directory: ObjCBool = false
+        let exists = manager.fileExists(atPath: path, isDirectory: &directory)
+        return exists
+    }
 }
