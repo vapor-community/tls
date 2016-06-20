@@ -15,9 +15,17 @@ public enum Error: ErrorProtocol {
     case connect(SocketError, String)
     case send(SocketError, String)
     case receive(SocketError, String)
+
+    case invalidPeerCertificate(PeerCertificateError)
 }
 
-public enum SocketError: Int32, ErrorProtocol {
+public enum PeerCertificateError {
+    case notPresented
+    case noIssuerCertificate
+    case invalid
+}
+
+public enum SocketError: Int32 {
     case none
     case zeroReturn
     case wantRead

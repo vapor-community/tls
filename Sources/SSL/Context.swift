@@ -1,10 +1,31 @@
 import COpenSSL
 import Foundation
 
+/**
+    An SSL context that contains the
+    optional certificates as well as references
+    to all initialized SSL libraries and configurations.
+
+    The context is used to create secure sockets and should
+    be reused when creating multiple sockets.
+*/
 public final class Context {
     public typealias CContext = UnsafeMutablePointer<SSL_CTX>
     public let cContext: CContext
 
+    public let certificates: Certificates
+
+    public let mode: Mode
+
+    /**
+        Creates an SSL Context.
+
+        - parameter mode: Client or Server.
+        - parameter certificates: The certificates for the Client or Server.
+        - parameter verifyDepth: Sets the maximum depth for the certificate chain verification that shall be allowed for ssl. 
+        - parameter cipherList: Sets the list of available ciphers for the context using the control string str 
+            Read more: https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_set_cipher_list.html
+    */
     public init(
         mode: Mode,
         certificates: Certificates,
@@ -23,6 +44,8 @@ public final class Context {
         }
 
         cContext = context
+        self.certificates = certificates
+        self.mode = mode
 
         SSL_CTX_set_cipher_list(cContext, cipherList)
 
@@ -43,15 +66,18 @@ public final class Context {
         case .none:
             break
         case .files(let certificateFile, let privateKeyFile, let signature):
-            try verifySignature(signature)
+            try loadVerifySignature(signature)
             try useCertificate(file: certificateFile)
             try usePrivateKey(file: privateKeyFile)
         case .chain(let chainFile, let signature):
-            try verifySignature(signature)
+            try loadVerifySignature(signature)
             try useCertificate(chain: chainFile)
         }
     }
 
+    /**
+        Frees any resources allocated by SSL.
+    */
     deinit {
         SSL_CTX_free(cContext)
 
@@ -59,13 +85,20 @@ public final class Context {
         EVP_cleanup()
     }
 
+    /**
+        Verifies that a file exists at the supplied path. 
+    */
     public func verifyFile(_ filePath: String) throws {
         guard NSFileManager.fileExists(at: filePath) else {
             throw Error.file("\(filePath) doesn't exist.")
         }
     }
 
-    public func verifySignature(_ signature: Certificates.Signature) throws {
+    /**
+        Loads and verifies the signature.
+        Does not verify case `.selfSigned`.
+    */
+    public func loadVerifySignature(_ signature: Certificates.Signature) throws {
         switch signature {
         case .selfSigned:
             break
@@ -76,6 +109,10 @@ public final class Context {
         }
     }
 
+    /**
+        Calls `SSL_CTX_load_verify_locations` for paths.
+        Learn more: https://wiki.openssl.org/index.php/Manual:SSL_CTX_load_verify_locations(3)
+    */
     public func loadVerifyLocations(file caCertificateFile: String) throws {
         try verifyFile(caCertificateFile)
 
@@ -84,12 +121,22 @@ public final class Context {
         }
     }
 
+    /**
+        Calls `SSL_CTX_load_verify_locations` for directories.
+        Learn more: https://wiki.openssl.org/index.php/Manual:SSL_CTX_load_verify_locations(3)
+    */
     public func loadVerifyLocations(directory caCertificateDirectory: String) throws {
         guard SSL_CTX_load_verify_locations(cContext, nil, caCertificateDirectory) == Result.OK else {
             throw Error.loadCACertificate(error)
         }
     }
 
+    /**
+        Loads the pem formatted certificate.
+
+        Calls `SSL_CTX_use_certificate_file`.
+        Learn more: https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_use_certificate.html
+    */
     public func useCertificate(file certificateFile: String) throws {
         try verifyFile(certificateFile)
 
@@ -98,6 +145,12 @@ public final class Context {
         }
     }
 
+    /**
+        Loads a certificate chain.
+
+        Calls `SSL_CTX_use_certificate_chain_file`.
+        Learn more: https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_use_certificate.html
+    */
     public func useCertificate(chain chainFile: String) throws {
         try verifyFile(chainFile)
 
@@ -106,6 +159,12 @@ public final class Context {
         }
     }
 
+    /**
+        Loads and checks the pem formatted private key.
+
+        Calls `SSL_CTX_use_PrivateKey_file` and `SSL_CTX_check_private_key`
+        Learn more: https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_use_certificate.html
+    */
     public func usePrivateKey(file privateKeyFile: String) throws {
         try verifyFile(privateKeyFile)
 
@@ -116,19 +175,5 @@ public final class Context {
         guard SSL_CTX_check_private_key(cContext) == Result.OK else {
             throw Error.checkPrivateKey(error)
         }
-    }
-}
-
-extension NSFileManager {
-    static func fileExists(at path: String) -> Bool {
-        #if os(Linux)
-            let manager = NSFileManager.defaultManager()
-        #else
-            let manager = NSFileManager.default()
-        #endif
-
-        var directory: ObjCBool = false
-        let exists = manager.fileExists(atPath: path, isDirectory: &directory)
-        return exists
     }
 }
