@@ -26,7 +26,6 @@ let socket: MyUnsecureSocket
 // and grab its file descriptor.
 // ...
 
-
 let descriptor: Int32 = socket.mySocketDescriptor
 ```
 
@@ -34,22 +33,22 @@ Now that you have the descriptor, let's add the SSL layer.
 
 ### Client
 
-This adds an SSL layer for sending requests and receiving responses from a server. No certificates are required to be a client.
+This adds an SSL layer for interacting with a server from a client. No certificates are required to be a client.
 
 ```swift
-let context = try SSL.Context(mode: .server, certificates: .none)
+let context = try SSL.Context(mode: .client, certificates: .none)
 let secureSocket = try SSL.Socket(context: context, descriptor: descriptor)
 
 try secureSocket.connect()
 ```
 
-Here a context is created. You should hold on to this context if you intend to create many sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
+Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
 
-The call to `connect()` creates the connection to the server to start sending and receiving data. This should be called *after* the unsecure socket has called its version of `connect()`.
+The call to `connect()` creates the connection to the server to start sending and receiving data. This should be called **after** the unsecure socket has called its version of `connect()`.
 
 ### Server 
 
-This adds an SSL layer for receiving requests and sending responses to a client. Setting up a server requires certificates.
+This adds an SSL layer for interacting with a client from a server. Setting up a server requires certificates.
 
 ```swift
 let context = try SSL.Context(mode: .server, certificates: .files(
@@ -63,13 +62,13 @@ let secureSocket = try SSL.Socket(context: context, descriptor: descriptor)
 try secureSocket.accept()
 ```
 
-Here a context is created. You should hold on to this context if you intend to create many sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
+Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
 
-The call to `accept()` accepts the connection and performs the SSL handshake with the client. This should be called *after* the unsecure socket has called its version of `accept()`.
+The call to `accept()` accepts the connection and performs the SSL handshake with the client. This should be called **after** the unsecure socket has called its version of `accept()`.
 
 ### Sending / Receiving
 
-You can now send and receive data through this new secure socket.
+You can now send and receive data through the new secure socket.
 
 ```swift
 try secureSocket.send([0x00, 0x01, 0x02])
@@ -94,6 +93,14 @@ public enum Certificate.Signature {
 }
 ```
 
+### Verification
+
+You can verify the certificates presented by the peer manually.
+
+```swift
+try socket.verifyConnection()
+```
+
 ### Errors
 
 The `Error` enum comprises all errors that can be thrown from this module. The `String` in all of the cases is a readable error message from OpenSSL.
@@ -113,7 +120,9 @@ public enum Error: ErrorProtocol {
     case connect(SocketError, String)
     case send(SocketError, String)
     case receive(SocketError, String)
-}```
+    case invalidPeerCertificate(PeerCertificateError)
+}
+```
 
 Some cases of the `Error` enum contain `SocketError`s inside.
 
@@ -129,6 +138,16 @@ public enum SocketError: Int32, ErrorProtocol {
     case syscall
     case ssl
     case unknown
+}
+```
+
+One case of the `Error` enum contains `PeerCertificateError`s inside. This is thrown by `verifyConnection()`.
+
+```swift
+public enum PeerCertificateError {
+    case notPresented
+    case noIssuerCertificate
+    case invalid
 }
 ```
 
@@ -151,9 +170,9 @@ sudo apt-get install libssl-dev
 
 Travis builds Swift SSL on both Ubuntu 14.04 and macOS 10.11. Check out the `.travis.yml` file to see how this package is built and compiled during testing.
 
-## Fluent
+## Vapor
 
-This wrapper was created to power [Fluent](https://github.com/qutheory/fluent), an ORM for Swift. 
+This wrapper was created to power [Vapor](https://github.com/qutheory/vapor), an Web Framework for Swift. 
 
 ## Author
 
