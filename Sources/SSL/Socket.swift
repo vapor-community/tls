@@ -5,12 +5,12 @@ public final class Socket {
 
     public let cSSL: CSSL
 
-    public init(context: Context, socketDescriptor: Int32) throws {
+    public init(context: Context, descriptor: Int32) throws {
         guard let ssl = SSL_new(context.cContext) else {
             throw Error.socketCreation(error)
         }
 
-        SSL_set_fd(ssl, socketDescriptor)
+        SSL_set_fd(ssl, descriptor)
 
         self.cSSL = ssl
     }
@@ -20,40 +20,11 @@ public final class Socket {
         SSL_free(cSSL)
     }
 
-    public func errorFor(_ result: Int32) -> String {
-        let r = SSL_get_error(cSSL, result)
-
-        let string: String
-        switch r {
-        case SSL_ERROR_NONE:
-            string = "None"
-        case SSL_ERROR_ZERO_RETURN:
-            string = "Zero return"
-        case SSL_ERROR_WANT_READ:
-            string = "Want read"
-        case SSL_ERROR_WANT_WRITE:
-            string = "Want write"
-        case SSL_ERROR_WANT_CONNECT:
-            string = "Want connect"
-        case SSL_ERROR_WANT_ACCEPT:
-            string = "Want accept"
-        case SSL_ERROR_WANT_X509_LOOKUP:
-            return "Want x509 lookup"
-        case SSL_ERROR_SYSCALL:
-            string = "syscall"
-        case SSL_ERROR_SSL:
-            string = "ssl"
-        default:
-            string = "Unknown"
-        }
-
-        return string + " " + error
-    }
 
     public func connect() throws {
         let result = SSL_connect(cSSL)
         guard result == Result.OK else {
-            throw Error.connect(errorFor(result))
+            throw Error.connect(SocketError(result), error)
         }
 
     }
@@ -61,7 +32,7 @@ public final class Socket {
     public func accept() throws {
         let result = SSL_accept(cSSL)
         guard result == Result.OK else {
-            throw Error.accept(errorFor(result))
+            throw Error.accept(SocketError(result), error)
         }
     }
 
@@ -75,7 +46,7 @@ public final class Socket {
         let bytesRead = Int(result)
 
         guard bytesRead >= 0 else {
-            throw Error.receive(error)
+            throw Error.receive(SocketError(result), error)
         }
 
 
@@ -89,7 +60,7 @@ public final class Socket {
         let bytesSent = SSL_write(cSSL, buffer.baseAddress, bytes.count.int32)
 
         guard bytesSent >= 0 else {
-            throw Error.send(error)
+            throw Error.send(SocketError(bytesSent), error)
         }
     }
     

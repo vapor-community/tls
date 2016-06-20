@@ -1,7 +1,7 @@
 import XCTest
 @testable import SSL
 
-class SSLInitTests: XCTestCase {
+class ContextTests: XCTestCase {
     static var allTests = [
         ("testInitServer", testInitServer),
         ("testInitClient", testInitClient)
