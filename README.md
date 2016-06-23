@@ -1,9 +1,12 @@
-# SSL for Swift
+# Transport Layer Security (TLS/SSL) for Swift
+
+> Transport Layer Security (TLS) is the successor to Secure Socket Layer 3.0 (SSL). SSL 3.0 was deprecated in June 2015.
+> https://tools.ietf.org/html/rfc7568
 
 ![Swift](https://camo.githubusercontent.com/0727f3687a1e263cac101c5387df41048641339c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f53776966742d332e302d6f72616e67652e7376673f7374796c653d666c6174)
-[![Build Status](https://travis-ci.org/qutheory/ssl.svg?branch=master)](https://travis-ci.org/qutheory/mysql)
+[![Build Status](https://travis-ci.org/qutheory/tls.svg?branch=master)](https://travis-ci.org/qutheory/mysql)
 
-A Swift wrapper for OpenSSL.
+A Swift wrapper for Transport Layer Security (TLS/SSL) using OpenSSL.
 
 - [x] Swifty Interface
 - [x] Client and Server
@@ -11,14 +14,14 @@ A Swift wrapper for OpenSSL.
 
 ## Examples
 
-The examples below assume you already have a socket library and you want to add an SSL layer. If you do not already have a socket library, check out [Socks](https://github.com/czechboy0/Socks) by Honza Dvorsky. 
+The examples below assume you already have a socket library and you want to add TLS. If you do not already have a socket library, check out [Socks](https://github.com/czechboy0/Socks) by Honza Dvorsky. 
 
-There is an add-on for Socks called [SecretSocks](https://github.com/czechboy0/SecretSocks) that includes this SSL library and provides a convenient `makeSecret()` method for all Socks' sockets.
+There is an add-on for Socks called [SecretSocks](https://github.com/czechboy0/SecretSocks) that includes this TLS library and provides a convenient `makeSecret()` method for all Socks' sockets.
 
 If you are using a different socket library, no need to worry. You only need access to the socket's file descriptor to use this package.
 
 ```swift
-import SSL
+import TLS
 
 let socket: MyUnsecureSocket
 
@@ -29,42 +32,42 @@ let socket: MyUnsecureSocket
 let descriptor: Int32 = socket.mySocketDescriptor
 ```
 
-Now that you have the descriptor, let's add the SSL layer.
+Now that you have the descriptor, let's add TLS.
 
 ### Client
 
-This adds an SSL layer for interacting with a server from a client. No certificates are required to be a client.
+This adds a Transport Security Layer for interacting with a server from a client. No certificates are required to be a client.
 
 ```swift
-let context = try SSL.Context(mode: .client, certificates: .none)
-let secureSocket = try SSL.Socket(context: context, descriptor: descriptor)
+let context = try TLS.Context(mode: .client, certificates: .none)
+let secureSocket = try TLS.Socket(context: context, descriptor: descriptor)
 
 try secureSocket.connect()
 ```
 
-Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
+Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `TLS.Socket`. 
 
 The call to `connect()` creates the connection to the server to start sending and receiving data. This should be called **after** the unsecure socket has called its version of `connect()`.
 
 ### Server 
 
-This adds an SSL layer for interacting with a client from a server. Setting up a server requires certificates.
+This adds a Transport Security Layer for interacting with a client from a server. Setting up a server requires certificates.
 
 ```swift
-let context = try SSL.Context(mode: .server, certificates: .files(
+let context = try TLS.Context(mode: .server, certificates: .files(
     certificateFile: "./Certs/cert.pem",
     privateKeyFile: "./Certs/key.pem",
     signature: .selfSigned
 ))
 
-let secureSocket = try SSL.Socket(context: context, descriptor: descriptor)
+let secureSocket = try TLS.Socket(context: context, descriptor: descriptor)
 
 try secureSocket.accept()
 ```
 
-Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `SSL.Socket`. 
+Here a context is created. You should hold on to this context if you intend to create multiple sockets. Your socket `descriptor` is then used with the `context` to create an `TLS.Socket`. 
 
-The call to `accept()` accepts the connection and performs the SSL handshake with the client. This should be called **after** the unsecure socket has called its version of `accept()`.
+The call to `accept()` accepts the connection and performs the TLS handshake with the client. This should be called **after** the unsecure socket has called its version of `accept()`.
 
 ### Sending / Receiving
 
@@ -77,7 +80,7 @@ let data = try secureSocket.receive(max: 3)
 
 ### Certificates
 
-The `Certificates` enum lets you supply the appropriate certificates for your SSL server.
+The `Certificates` enum lets you supply the appropriate certificates for your TLS-enabled server.
 
 ```swift
 public enum Certificates {
@@ -168,7 +171,7 @@ sudo apt-get install libssl-dev
 
 ### Travis
 
-Travis builds Swift SSL on both Ubuntu 14.04 and macOS 10.11. Check out the `.travis.yml` file to see how this package is built and compiled during testing.
+Travis builds Swift TLS on both Ubuntu 14.04 and macOS 10.11. Check out the `.travis.yml` file to see how this package is built and compiled during testing.
 
 ## Vapor
 
