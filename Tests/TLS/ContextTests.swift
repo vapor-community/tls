@@ -1,5 +1,5 @@
 import XCTest
-@testable import SSL
+@testable import TLS
 
 class ContextTests: XCTestCase {
     static var allTests = [
@@ -9,7 +9,7 @@ class ContextTests: XCTestCase {
 
     func testInitServer() {
         do {
-            _ = try SSL.Context(mode: .server, certificates: .files(
+            _ = try TLS.Context(mode: .server, certificates: .files(
                 certificateFile: "./Certs/cert.pem",
                 privateKeyFile: "./Certs/key.pem",
                 signature: .selfSigned
@@ -21,7 +21,7 @@ class ContextTests: XCTestCase {
 
     func testInitClient() {
         do {
-            _ = try SSL.Context(mode: .client, certificates: .none)
+            _ = try TLS.Context(mode: .client, certificates: .none)
         } catch {
             XCTFail("Initialization failed: \(error)")
         }
