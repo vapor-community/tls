@@ -9,6 +9,12 @@ import Foundation
     The context is used to create secure sockets and should
     be reused when creating multiple sockets.
 */
+
+#if !os(Linux)
+    // Temporary workaround to name differences on Linux and Mac
+    typealias NSFileManager = FileManager
+#endif
+
 public final class Context {
     public typealias CContext = UnsafeMutablePointer<SSL_CTX>
     public let cContext: CContext
@@ -22,8 +28,8 @@ public final class Context {
 
         - parameter mode: Client or Server.
         - parameter certificates: The certificates for the Client or Server.
-        - parameter verifyDepth: Sets the maximum depth for the certificate chain verification that shall be allowed for ssl. 
-        - parameter cipherList: Sets the list of available ciphers for the context using the control string str 
+        - parameter verifyDepth: Sets the maximum depth for the certificate chain verification that shall be allowed for ssl.
+        - parameter cipherList: Sets the list of available ciphers for the context using the control string str
             Read more: https://www.openssl.org/docs/manmaster/ssl/SSL_CTX_set_cipher_list.html
     */
     public init(
@@ -86,7 +92,7 @@ public final class Context {
     }
 
     /**
-        Verifies that a file exists at the supplied path. 
+        Verifies that a file exists at the supplied path.
     */
     public func verifyFile(_ filePath: String) throws {
         guard NSFileManager.fileExists(at: filePath) else {
