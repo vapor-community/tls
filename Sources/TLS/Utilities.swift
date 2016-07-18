@@ -15,7 +15,7 @@ extension NSFileManager {
         #if os(Linux)
             let manager = NSFileManager.defaultManager()
         #else
-            let manager = NSFileManager.default()
+            let manager = NSFileManager.default
         #endif
 
         var directory: ObjCBool = false
