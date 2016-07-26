@@ -10,11 +10,6 @@ import Foundation
     be reused when creating multiple sockets.
 */
 
-#if !os(Linux)
-    // Temporary workaround to name differences on Linux and Mac
-    typealias NSFileManager = FileManager
-#endif
-
 public final class Context {
     public typealias CContext = UnsafeMutablePointer<SSL_CTX>
     public let cContext: CContext
@@ -95,7 +90,7 @@ public final class Context {
         Verifies that a file exists at the supplied path.
     */
     public func verifyFile(_ filePath: String) throws {
-        guard NSFileManager.fileExists(at: filePath) else {
+        guard FileManager.fileExists(at: filePath) else {
             throw TLSError.file("\(filePath) doesn't exist.")
         }
     }

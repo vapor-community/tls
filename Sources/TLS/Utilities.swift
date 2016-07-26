@@ -10,12 +10,12 @@ extension Int {
     }
 }
 
-extension NSFileManager {
+extension FileManager {
     static func fileExists(at path: String) -> Bool {
         #if os(Linux)
             let manager = FileManager.default()
         #else
-            let manager = NSFileManager.default
+            let manager = FileManager.default
         #endif
 
         var directory: ObjCBool = false
