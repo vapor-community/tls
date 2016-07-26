@@ -100,8 +100,11 @@ public final class Socket {
         - throws: TLSError.invalidPeerCertificate(PeerCertificateError)
     */
     public func verifyConnection() throws {
-        if case .server = context.mode {
-            if context.certificates.areSelfSigned { return }
+        if
+            case.server = context.mode,
+            context.certificates.areSelfSigned
+        {
+            return
         }
         
         guard let certificate = SSL_get_peer_certificate(cSSL) else {
