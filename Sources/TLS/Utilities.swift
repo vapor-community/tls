@@ -13,7 +13,7 @@ extension Int {
 extension NSFileManager {
     static func fileExists(at path: String) -> Bool {
         #if os(Linux)
-            let manager = NSFileManager.defaultManager()
+            let manager = FileManager.default()
         #else
             let manager = NSFileManager.default
         #endif
