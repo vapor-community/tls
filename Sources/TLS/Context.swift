@@ -46,7 +46,7 @@ public final class Context {
         let method = try Method(mode: mode)
 
         guard let context = SSL_CTX_new(method.cMethod) else {
-            throw Error.contextCreation
+            throw TLSError.contextCreation
         }
 
         cContext = context
@@ -96,7 +96,7 @@ public final class Context {
     */
     public func verifyFile(_ filePath: String) throws {
         guard NSFileManager.fileExists(at: filePath) else {
-            throw Error.file("\(filePath) doesn't exist.")
+            throw TLSError.file("\(filePath) doesn't exist.")
         }
     }
 
@@ -123,7 +123,7 @@ public final class Context {
         try verifyFile(caCertificateFile)
 
         guard SSL_CTX_load_verify_locations(cContext, caCertificateFile, nil) == Result.OK else {
-            throw Error.loadCACertificate(error)
+            throw TLSError.loadCACertificate(error)
         }
     }
 
@@ -133,7 +133,7 @@ public final class Context {
     */
     public func loadVerifyLocations(directory caCertificateDirectory: String) throws {
         guard SSL_CTX_load_verify_locations(cContext, nil, caCertificateDirectory) == Result.OK else {
-            throw Error.loadCACertificate(error)
+            throw TLSError.loadCACertificate(error)
         }
     }
 
@@ -147,7 +147,7 @@ public final class Context {
         try verifyFile(certificateFile)
 
         guard SSL_CTX_use_certificate_file(cContext, certificateFile, SSL_FILETYPE_PEM) == Result.OK else {
-            throw Error.useCertificate(error)
+            throw TLSError.useCertificate(error)
         }
     }
 
@@ -161,7 +161,7 @@ public final class Context {
         try verifyFile(chainFile)
 
         guard SSL_CTX_use_certificate_chain_file(cContext, chainFile) == Result.OK else {
-            throw Error.useChain(error)
+            throw TLSError.useChain(error)
         }
     }
 
@@ -175,11 +175,11 @@ public final class Context {
         try verifyFile(privateKeyFile)
 
         guard SSL_CTX_use_PrivateKey_file(cContext, privateKeyFile, SSL_FILETYPE_PEM) == Result.OK else {
-            throw Error.usePrivateKey(error)
+            throw TLSError.usePrivateKey(error)
         }
 
         guard SSL_CTX_check_private_key(cContext) == Result.OK else {
-            throw Error.checkPrivateKey(error)
+            throw TLSError.checkPrivateKey(error)
         }
     }
 }

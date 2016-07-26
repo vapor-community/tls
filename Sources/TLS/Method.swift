@@ -19,13 +19,13 @@ public class Method {
         switch mode {
         case .client:
             guard let m = SSLv23_client_method() else {
-                throw Error.methodCreation
+                throw TLSError.methodCreation
 
             }
             method = m
         case .server:
             guard let m = SSLv23_server_method() else {
-                throw Error.methodCreation
+                throw TLSError.methodCreation
             }
             method = m
         }

@@ -18,7 +18,7 @@ public final class Socket {
     */
     public init(context: Context, descriptor: Int32) throws {
         guard let ssl = SSL_new(context.cContext) else {
-            throw Error.socketCreation(error)
+            throw TLSError.socketCreation(error)
         }
 
         SSL_set_fd(ssl, descriptor)
@@ -40,7 +40,7 @@ public final class Socket {
     public func connect() throws {
         let result = SSL_connect(cSSL)
         guard result == Result.OK else {
-            throw Error.connect(SocketError(result), error)
+            throw TLSError.connect(SocketError(result), error)
         }
     }
 
@@ -52,7 +52,7 @@ public final class Socket {
     public func accept() throws {
         let result = SSL_accept(cSSL)
         guard result == Result.OK else {
-            throw Error.accept(SocketError(result), error)
+            throw TLSError.accept(SocketError(result), error)
         }
     }
 
@@ -62,16 +62,16 @@ public final class Socket {
         - parameter max: The maximum amount of bytes to receive.
     */
     public func receive(max: Int) throws -> [UInt8]  {
-        let pointer = UnsafeMutablePointer<UInt8>.init(allocatingCapacity: max)
+        let pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: max)
         defer {
-            pointer.deallocateCapacity(max)
+            pointer.deallocate(capacity: max)
         }
 
         let result = SSL_read(cSSL, pointer, max.int32)
         let bytesRead = Int(result)
 
         guard bytesRead >= 0 else {
-            throw Error.receive(SocketError(result), error)
+            throw TLSError.receive(SocketError(result), error)
         }
 
 
@@ -90,22 +90,22 @@ public final class Socket {
         let bytesSent = SSL_write(cSSL, buffer.baseAddress, bytes.count.int32)
 
         guard bytesSent >= 0 else {
-            throw Error.send(SocketError(bytesSent), error)
+            throw TLSError.send(SocketError(bytesSent), error)
         }
     }
 
     /**
         Verifies the connection with the peer.
      
-        - throws: Error.invalidPeerCertificate(PeerCertificateError)
+        - throws: TLSError.invalidPeerCertificate(PeerCertificateError)
     */
     public func verifyConnection() throws {
-        if case .server = context.mode where context.certificates.areSelfSigned {
-            return
+        if case .server = context.mode {
+            if context.certificates.areSelfSigned { return }
         }
-
+        
         guard let certificate = SSL_get_peer_certificate(cSSL) else {
-            throw Error.invalidPeerCertificate(.notPresented)
+            throw TLSError.invalidPeerCertificate(.notPresented)
         }
         defer {
             X509_free(certificate)
@@ -117,10 +117,10 @@ public final class Socket {
             break
         case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT, X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
             if !context.certificates.areSelfSigned {
-                throw Error.invalidPeerCertificate(.noIssuerCertificate)
+                throw TLSError.invalidPeerCertificate(.noIssuerCertificate)
             }
         default:
-            throw Error.invalidPeerCertificate(.invalid)
+            throw TLSError.invalidPeerCertificate(.invalid)
         }
     }
 }
