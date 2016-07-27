@@ -1,6 +1,6 @@
 import COpenSSL
 
-public enum Error: ErrorProtocol {
+public enum TLSError: Error {
     case methodCreation
     case contextCreation
     case loadCACertificate(String)
