@@ -1,4 +1,4 @@
-import COpenSSL
+import OpenSSL
 
 /**
     An SSL method of communication based on the Client or Server mode.

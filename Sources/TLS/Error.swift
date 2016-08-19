@@ -1,4 +1,4 @@
-import COpenSSL
+import OpenSSL
 
 public enum TLSError: Error {
     case methodCreation
