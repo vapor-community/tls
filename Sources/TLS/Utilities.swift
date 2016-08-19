@@ -12,11 +12,7 @@ extension Int {
 
 extension FileManager {
     static func fileExists(at path: String) -> Bool {
-        #if os(Linux)
-            let manager = FileManager.default()
-        #else
-            let manager = FileManager.default
-        #endif
+        let manager = FileManager.default
 
         var directory: ObjCBool = false
         let exists = manager.fileExists(atPath: path, isDirectory: &directory)
