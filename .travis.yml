@@ -6,13 +6,6 @@ sudo: required
 dist: trusty
 osx_image: xcode8
 install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      brew install openssl;
-      brew link --force openssl;
-    fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      sudo apt-get install libssl-dev;
-    fi
   - eval "$(curl -sL swift.qutheory.io/travis)"
 script:
   # Build TLS
