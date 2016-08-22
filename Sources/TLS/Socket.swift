@@ -1,4 +1,4 @@
-import OpenSSL
+import COpenSSL
 
 /**
     An SSL Socket.
