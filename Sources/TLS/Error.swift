@@ -15,6 +15,8 @@ public enum TLSError: Error {
     case connect(SocketError, String)
     case send(SocketError, String)
     case receive(SocketError, String)
+    case close(SocketError, String)
+    case setTimeout(SocketError, String)
 
     case invalidPeerCertificate(PeerCertificateError)
 }
