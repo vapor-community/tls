@@ -154,24 +154,15 @@ public enum PeerCertificateError {
 }
 ```
 
-## Building
+## Using with Xcode
 
-### macOS
+Swift Package Manager will automatically build this project correctly, but when using with Xcode, you will need to add a setting to your Xcode project file:
 
-```bash
-brew install openssl
-brew link --force openssl
+Under Project > Build Settings > Library Search Paths, add:
+
 ```
-
-### Linux
-
-```bash
-sudo apt-get install libssl-dev
+$(PROJECT_DIR)/**
 ```
-
-### Travis
-
-Travis builds Swift TLS on both Ubuntu 14.04 and macOS 10.11. Check out the `.travis.yml` file to see how this package is built and compiled during testing.
 
 ## Vapor
 

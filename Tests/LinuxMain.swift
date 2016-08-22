@@ -1,5 +1,5 @@
 import XCTest
-@testable import TLSTestSuite
+@testable import TLSTests
 
 XCTMain([
      testCase(ContextTests.allTests),
