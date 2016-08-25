@@ -9,13 +9,3 @@ extension Int {
         return Int32(self)
     }
 }
-
-extension FileManager {
-    static func fileExists(at path: String) -> Bool {
-        let manager = FileManager.default
-
-        var directory: ObjCBool = false
-        let exists = manager.fileExists(atPath: path, isDirectory: &directory)
-        return exists
-    }
-}
