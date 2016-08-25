@@ -9,6 +9,7 @@ public final class Stream {
     public let cConfig: CConfig
     public let context: Context
     public let certificates: Certificates
+    public let config: TLSConfig
 
     /**
          Creates a Socket from an SSL context and an
@@ -17,20 +18,31 @@ public final class Stream {
          - parameter context: Re-usable SSL.Context in either Client or Server mode
          - parameter descriptor: The file descriptor from an unsecure socket already created.
     */
-    public init(context: Context, certificates: Certificates, socket: Int32) throws {
+    public init(context: Context, certificates: Certificates, config: TLSConfig, socket: Int32) throws {
         self.context = context
+        self.config = config
         cConfig = tls_config_new()
         self.socket = socket
 
         self.certificates = certificates
         try loadCertificates(certificates)
 
+        applyTLSConfig()
+        
         tls_configure(context.cContext, cConfig)
     }
 
-    public convenience init(mode: Mode, socket: Int32, certificates: Certificates = .none) throws {
+    public convenience init(mode: Mode, socket: Int32, config: TLSConfig, certificates: Certificates = .none) throws {
         let context = try Context(mode: mode)
-        try self.init(context: context, certificates: certificates, socket: socket)
+        try self.init(context: context, certificates: certificates, config: config, socket: socket)
+    }
+    
+    private func applyTLSConfig() {
+        let conf = self.config
+        
+        if !conf.verifyName {
+            tls_config_insecure_noverifyname(cConfig)
+        }
     }
 
     /**
