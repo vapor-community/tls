@@ -11,8 +11,9 @@ import Foundation
 */
 
 public final class Context {
-    public let certificates: Certificates
+    public typealias CContext = OpaquePointer
     public let mode: Mode
+    public let cContext: CContext
 
     /**
         Creates an SSL Context.
@@ -20,11 +21,36 @@ public final class Context {
         - parameter mode: Client or Server.
         - parameter certificates: The certificates for the Client or Server.
     */
-    public init(
-        mode: Mode,
-        certificates: Certificates
-    ) throws {
+    public init(mode: Mode) throws {
+        tls_init()
+
+        switch mode {
+        case .server:
+            cContext = tls_server()
+        case .client:
+            cContext = tls_client()
+        }
+
         self.mode = mode
-        self.certificates = certificates
+    }
+
+    deinit {
+        tls_free(cContext)
+    }
+
+    /**
+        The last error emitted using
+        this context.
+    */
+    public var error: String {
+        let string: String
+
+        if let reason = tls_error(cContext) {
+            string = String(validatingUTF8: reason) ?? "Unknown"
+        } else {
+            string = "Unknown"
+        }
+        
+        return string
     }
 }
