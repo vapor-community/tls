@@ -3,8 +3,10 @@
 > Transport Layer Security (TLS) is the successor to Secure Socket Layer 3.0 (SSL). SSL 3.0 was deprecated in June 2015.
 > https://tools.ietf.org/html/rfc7568
 
-![Swift](https://camo.githubusercontent.com/0727f3687a1e263cac101c5387df41048641339c/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f53776966742d332e302d6f72616e67652e7376673f7374796c653d666c6174)
-[![Build Status](https://travis-ci.org/qutheory/tls.svg?branch=master)](https://travis-ci.org/qutheory/mysql)
+![Swift](http://img.shields.io/badge/swift-v3.0--dev.08.18-brightgreen.svg)
+[![Build Status](https://travis-ci.org/vapor/tls.svg?branch=master)](https://travis-ci.org/vapor/tls)
+[![CircleCI](https://circleci.com/gh/vapor/tls.svg?style=shield)](https://circleci.com/gh/vapor/tls)
+[![Slack Status](http://vapor.team/badge.svg)](http://vapor.team)
 
 A Swift wrapper for Transport Layer Security (TLS/SSL) using OpenSSL.
 
