@@ -1,6 +1,15 @@
 import XCTest
 @testable import TLS
 
+#if Xcode
+var workDir: String {
+    let parent = #file.characters.split(separator: "/").map(String.init).dropLast().joined(separator: "/")
+    let path = "/\(parent)/../../"
+    return path
+}
+#else
+let workDir = "./"
+#endif
 class ContextTests: XCTestCase {
     static var allTests = [
         ("testInitServer", testInitServer),
@@ -10,8 +19,8 @@ class ContextTests: XCTestCase {
     func testInitServer() {
         do {
             _ = try TLS.Context(mode: .server, certificates: .files(
-                certificateFile: "./Certs/cert.pem",
-                privateKeyFile: "./Certs/key.pem",
+                certificateFile: workDir + "Certs/cert.pem",
+                privateKeyFile: workDir + "Certs/key.pem",
                 signature: .selfSigned
             ))
         } catch {

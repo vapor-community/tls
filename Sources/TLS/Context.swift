@@ -1,4 +1,4 @@
-import COpenSSL
+import CLibreSSL
 import Foundation
 
 /**
@@ -59,7 +59,8 @@ public final class Context {
 
 
         if case .client = mode {
-            SSL_CTX_ctrl(context, SSL_CTRL_OPTIONS, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_COMPRESSION, nil)
+            let flag = (Int(SSL_OP_NO_SSLv2) | Int(SSL_OP_NO_SSLv3) | Int(SSL_OP_NO_COMPRESSION))
+            SSL_CTX_ctrl(context, SSL_CTRL_OPTIONS, flag, nil)
         }
 
         switch certificates {
