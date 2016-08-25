@@ -41,8 +41,7 @@ Now that you have the descriptor, let's add TLS.
 This adds a Transport Security Layer for interacting with a server from a client. No certificates are required to be a client.
 
 ```swift
-let context = try TLS.Context(mode: .client, certificates: .none)
-let secureSocket = try TLS.Socket(context: context, descriptor: descriptor)
+let secureSocket = try TLS.Socket(mode: .client, descriptor: descriptor)
 
 try secureSocket.connect()
 ```
@@ -56,13 +55,13 @@ The call to `connect()` creates the connection to the server to start sending an
 This adds a Transport Security Layer for interacting with a client from a server. Setting up a server requires certificates.
 
 ```swift
-let context = try TLS.Context(mode: .server, certificates: .files(
+let context = try TLS.Context(mode: .server)
+
+let secureSocket = try TLS.Socket(context: context, descriptor: descriptor, certificates: .files(
     certificateFile: "./Certs/cert.pem",
     privateKeyFile: "./Certs/key.pem",
     signature: .selfSigned
 ))
-
-let secureSocket = try TLS.Socket(context: context, descriptor: descriptor)
 
 try secureSocket.accept()
 ```
@@ -98,63 +97,9 @@ public enum Certificate.Signature {
 }
 ```
 
-### Verification
-
-You can verify the certificates presented by the peer manually.
-
-```swift
-try socket.verifyConnection()
-```
-
 ### Errors
 
-The `Error` enum comprises all errors that can be thrown from this module. The `String` in all of the cases is a readable error message from OpenSSL.
-
-```swift
-public enum Error: ErrorProtocol {
-    case methodCreation
-    case contextCreation
-    case loadCACertificate(String)
-    case useCertificate(String)
-    case usePrivateKey(String)
-    case checkPrivateKey(String)
-    case useChain(String)
-    case socketCreation(String)
-    case file(String)
-    case accept(SocketError, String)
-    case connect(SocketError, String)
-    case send(SocketError, String)
-    case receive(SocketError, String)
-    case invalidPeerCertificate(PeerCertificateError)
-}
-```
-
-Some cases of the `Error` enum contain `SocketError`s inside.
-
-```swift
-public enum SocketError: Int32, ErrorProtocol {
-    case none
-    case zeroReturn
-    case wantRead
-    case wantWrite
-    case wantConnect
-    case wantAccept
-    case wantX509Lookup
-    case syscall
-    case ssl
-    case unknown
-}
-```
-
-One case of the `Error` enum contains `PeerCertificateError`s inside. This is thrown by `verifyConnection()`.
-
-```swift
-public enum PeerCertificateError {
-    case notPresented
-    case noIssuerCertificate
-    case invalid
-}
-```
+The `Error` enum comprises all errors that can be thrown from this module. The `String` in all of the cases is a readable error message from LibreSSL.
 
 ## Using with Xcode
 
@@ -168,7 +113,7 @@ $(PROJECT_DIR)/**
 
 ## Vapor
 
-This wrapper was created to power [Vapor](https://github.com/qutheory/vapor), an Web Framework for Swift. 
+This wrapper was created to power [Vapor](https://github.com/vapor/vapor), an Web Framework for Swift. 
 
 ## Author
 
