@@ -9,6 +9,7 @@ public final class Stream {
     public let cConfig: CConfig
     public let context: Context
     public let certificates: Certificates
+    public let config: Config
 
     /**
          Creates a Socket from an SSL context and an
@@ -17,20 +18,36 @@ public final class Stream {
          - parameter context: Re-usable SSL.Context in either Client or Server mode
          - parameter descriptor: The file descriptor from an unsecure socket already created.
     */
-    public init(context: Context, certificates: Certificates, socket: Int32) throws {
+    public init(context: Context, config: Config, socket: Int32) throws {
         self.context = context
+        self.config = config
         cConfig = tls_config_new()
         self.socket = socket
 
-        self.certificates = certificates
+        self.certificates = config.certificates
         try loadCertificates(certificates)
 
+        applyConfig()
+        
         tls_configure(context.cContext, cConfig)
     }
 
-    public convenience init(mode: Mode, socket: Int32, certificates: Certificates = .none) throws {
+    public convenience init(mode: Mode, socket: Int32, config: Config) throws {
         let context = try Context(mode: mode)
-        try self.init(context: context, certificates: certificates, socket: socket)
+        try self.init(context: context, config: config, socket: socket)
+    }
+    
+    private func applyConfig() {
+        let conf = self.config
+        
+        if !conf.verifyCertificates || conf.certificates.areSelfSigned {
+            print("[TLS] Warning: Self signed certificates prevent certificate verification.")
+            tls_config_insecure_noverifycert(cConfig)
+        }
+
+        if !conf.verifyName {
+            tls_config_insecure_noverifyname(cConfig)
+        }
     }
 
     /**
@@ -69,11 +86,6 @@ public final class Stream {
             try loadSignature(signature)
         case .none:
             break
-        }
-
-        if certificates.areSelfSigned {
-            print("[TLS] Warning: Self signed certificates prevent certificate verification.")
-            tls_config_insecure_noverifycert(cConfig)
         }
     }
 
