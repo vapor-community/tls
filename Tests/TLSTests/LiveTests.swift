@@ -4,38 +4,94 @@ import SocksCore
 
 class LiveTests: XCTestCase {
     static var allTests = [
-        ("testLiveClientWithCACerts", testLiveClientWithCACerts)
+        ("testNoVerify", testNoVerify),
+        ("testWithCACerts", testWithCACerts),
+        ("testInvalidHostname", testInvalidHostname),
+        ("testInvalidHostnameNoVerify", testInvalidHostnameNoVerify),
+        ("testNoCerts", testNoCerts),
     ]
+
+    func testNoVerify() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org",
+            verifyCertificates: false
+        )
+        try socket.connect(servername: "httpbin.org")
+
+        try socket.send("GET /\r\n\r\n".toBytes())
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+
+        XCTAssert(received.contains("<!DOCTYPE html>"))
+    }
     
-    func testLiveClientWithCACerts() {
+    func testWithCACerts() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org",
+            certificates: Certificates.mozilla
+        )
+
+        try socket.connect(servername: "httpbin.org")
+
+        try socket.send("GET /\r\n\r\n".toBytes())
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+
+        XCTAssert(received.contains("<!DOCTYPE html>"))
+    }
+
+    func testInvalidHostname() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org",
+            verifyCertificates: false
+        )
 
         do {
-            let address = InternetAddress(hostname: "httpbin.org", port: 443)
-            let rawSocket = try TCPInternetSocket(address: address)
-            let descriptor = rawSocket.descriptor
-            var config = Config()
-            config.certificates = .certificateAuthority(signature: .signedFile(caCertificateFile: rootCertsPath()))
-            let socket = try TLS.Stream(mode: .client, socket: descriptor, config: config)
-            try rawSocket.connect()
-            try socket.connect(servername: address.hostname)
+            try socket.connect(servername: "nothttpbin.org")
             try socket.send("GET /\r\n\r\n".toBytes())
-            let received = try socket.receive(max: 65_536)
-            let str = try received.toString()
-            try socket.close()
-            try rawSocket.close()
-            
-            XCTAssert(str.contains("<!DOCTYPE html>"))
-            
+
+            XCTFail("Should not have sent.")
+        } catch TLSError.send(_) {
+
         } catch {
-            XCTFail("Error: \(error)")
+            XCTFail("Wrong error: \(error).")
         }
     }
-}
 
-func rootCertsPath() -> String {
-    return projectRootPath() + "/Certs/mozilla_certs.pem"
-}
+    func testInvalidHostnameNoVerify() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org",
+            verifyHost: false,
+            verifyCertificates: false
+        )
 
-func projectRootPath() -> String {
-    return #file.components(separatedBy: "/").dropLast(3).joined(separator: "/")
+        try socket.connect(servername: "nothttpbin.org")
+        try socket.send("GET /\r\n\r\n".toBytes())
+
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+
+        XCTAssert(received.contains("<!DOCTYPE html>"))
+    }
+
+    func testNoCerts() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org"
+        )
+
+        do {
+            try socket.connect(servername: "nothttpbin.org")
+
+            XCTFail("Should not have connected.")
+        } catch TLSError.connect(_) {
+
+        } catch {
+            XCTFail("Wrong error: \(error).")
+        }
+    }
 }
