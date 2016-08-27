@@ -26,7 +26,7 @@ public final class Stream {
 
         self.certificates = config.certificates
         try loadCertificates(certificates)
-
+        
         applyConfig()
         
         tls_configure(context.cContext, cConfig)
@@ -40,7 +40,7 @@ public final class Stream {
     private func applyConfig() {
         let conf = self.config
         
-        if !conf.verifyCertificates || conf.certificates.areSelfSigned {
+        if !conf.verifyCertificates || (context.mode == .server && conf.certificates.areSelfSigned) {
             print("[TLS] Warning: Self signed certificates prevent certificate verification.")
             tls_config_insecure_noverifycert(cConfig)
         }
@@ -83,6 +83,8 @@ public final class Stream {
             guard tls_config_set_key_file(cConfig, keyFile) == Result.OK else {
                 throw TLSError.setKeyFile(context.error)
             }
+            try loadSignature(signature)
+        case .certificateAuthority(let signature):
             try loadSignature(signature)
         case .none:
             break

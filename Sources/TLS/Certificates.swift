@@ -17,6 +17,7 @@ public enum Certificates {
     case none
     case files(certificateFile: String, privateKeyFile: String, signature: Signature)
     case chain(chainFile: String, signature: Signature)
+    case certificateAuthority(signature: Signature)
 
     public var areSelfSigned: Bool {
         switch self {
@@ -25,6 +26,8 @@ public enum Certificates {
         case .files(_, _, let signature):
             return signature.isSelfSigned
         case .chain(_, let signature):
+            return signature.isSelfSigned
+        case .certificateAuthority(let signature):
             return signature.isSelfSigned
         }
     }
