@@ -7,6 +7,7 @@ class LiveTests: XCTestCase {
         ("testNoVerify", testNoVerify),
         ("testWithCACerts", testWithCACerts),
         ("testInvalidHostname", testInvalidHostname),
+        ("testInvalidHostnameNoVerify", testInvalidHostnameNoVerify),
         ("testNoCerts", testNoCerts),
     ]
 
