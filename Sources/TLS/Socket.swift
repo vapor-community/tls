@@ -1,14 +1,11 @@
 import CLibreSSL
+import SocksCore
 
 /**
     An SSL Socket.
 */
-public final class Stream {
-    public typealias CConfig = OpaquePointer
-    public let socket: Int32
-    public let cConfig: CConfig
-    public let context: Context
-    public let certificates: Certificates
+public final class Socket {
+    public let socket: TCPInternetSocket
     public let config: Config
 
     /**
@@ -18,89 +15,32 @@ public final class Stream {
          - parameter context: Re-usable SSL.Context in either Client or Server mode
          - parameter descriptor: The file descriptor from an unsecure socket already created.
     */
-    public init(context: Context, config: Config, socket: Int32) throws {
-        self.context = context
+    public init(config: Config, socket: TCPInternetSocket) throws {
         self.config = config
-        cConfig = tls_config_new()
         self.socket = socket
-
-        self.certificates = config.certificates
-        try loadCertificates(certificates)
-        
-        applyConfig()
-        
-        tls_configure(context.cContext, cConfig)
     }
 
-    public convenience init(mode: Mode, socket: Int32, config: Config) throws {
+    public convenience init(
+        mode: Mode,
+        hostname: String,
+        port: UInt16 = 443,
+        certificates: Certificates = .none,
+        verifyHost: Bool = true,
+        verifyCertificates: Bool = true
+    ) throws {
         let context = try Context(mode: mode)
-        try self.init(context: context, config: config, socket: socket)
-    }
-    
-    private func applyConfig() {
-        let conf = self.config
-        
-        if !conf.verifyCertificates || (context.mode == .server && conf.certificates.areSelfSigned) {
-            print("[TLS] Warning: Self signed certificates prevent certificate verification.")
-            tls_config_insecure_noverifycert(cConfig)
-        }
 
-        if !conf.verifyName {
-            tls_config_insecure_noverifyname(cConfig)
-        }
-    }
+        let config = try Config(
+            context: context,
+            certificates: certificates,
+            verifyHost: verifyHost,
+            verifyCertificates: verifyCertificates
+        )
 
-    /**
-        Loads and sets the appropriate
-        certificate files.
-    */
-    private func loadSignature(_ signature: Certificates.Signature) throws {
-        switch signature {
-        case .signedDirectory(caCertificateDirectory: let dir):
-            guard tls_config_set_ca_path(cConfig, dir) == Result.OK else {
-                throw TLSError.setCAPath(path: dir, context.error)
-            }
-        case .signedFile(caCertificateFile: let file):
-            guard tls_config_set_ca_file(cConfig, file) == Result.OK else {
-                throw TLSError.setCAFile(file: file, context.error)
-            }
-        case .selfSigned:
-            break
-        }
-    }
+        let address = InternetAddress(hostname: hostname, port: port)
+        let socket = try TCPInternetSocket(address: address)
 
-    private func loadCertificates(_ certificates: Certificates) throws {
-        switch certificates {
-        case .chain(let file, let signature):
-            guard tls_config_set_cert_file(cConfig, file) == Result.OK else {
-                throw TLSError.setCertificateFile(context.error)
-            }
-            try loadSignature(signature)
-        case .files(let certFile, let keyFile, let signature):
-            guard tls_config_set_cert_file(cConfig, certFile) == Result.OK else {
-                throw TLSError.setCertificateFile(context.error)
-            }
-            guard tls_config_set_key_file(cConfig, keyFile) == Result.OK else {
-                throw TLSError.setKeyFile(context.error)
-            }
-            try loadSignature(signature)
-        case .certificateAuthority(let signature):
-            try loadSignature(signature)
-        case .none:
-            break
-        }
-    }
-
-    deinit {
-        tls_config_free(cConfig)
-    }
-
-
-    /**
-        Set a timeout for a given connection, in Seconds.
-    */
-    public func setTimeout(_ timeout: Int) throws {
-        // FIXME
+        try self.init(config: config, socket: socket)
     }
 
     /**
@@ -109,9 +49,15 @@ public final class Stream {
          This should only be called if the Context's mode is `.client`
     */
     public func connect(servername: String) throws {
-        let result = tls_connect_socket(context.cContext, socket, servername)
+        try socket.connect()
+        let result = tls_connect_socket(
+            config.context.cContext,
+            socket.descriptor,
+            servername
+        )
+
         guard result == Result.OK else {
-            throw TLSError.connect(context.error)
+            throw TLSError.connect(config.context.error)
         }
     }
 
@@ -121,9 +67,14 @@ public final class Stream {
          This should only be called if the Context's mode is `.server`
     */
     public func accept() throws {
-        let result = tls_accept_socket(context.cContext, nil, socket)
+        let result = tls_accept_socket(
+            config.context.cContext,
+            nil,
+            socket.descriptor
+        )
+
         guard result == Result.OK else {
-            throw TLSError.accept(context.error)
+            throw TLSError.accept(config.context.error)
         }
     }
 
@@ -138,11 +89,11 @@ public final class Stream {
             pointer.deallocate(capacity: max)
         }
 
-        let result = tls_read(context.cContext, pointer, max)
+        let result = tls_read(config.context.cContext, pointer, max)
         let bytesRead = Int(result)
 
         guard bytesRead >= 0 else {
-            throw TLSError.receive(context.error)
+            throw TLSError.receive(config.context.error)
         }
 
 
@@ -158,10 +109,10 @@ public final class Stream {
     public func send(_ bytes: [UInt8]) throws {
         let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
 
-        let bytesSent = tls_write(context.cContext, buffer.baseAddress, bytes.count)
+        let bytesSent = tls_write(config.context.cContext, buffer.baseAddress, bytes.count)
 
         guard bytesSent >= 0 else {
-            throw TLSError.send(context.error)
+            throw TLSError.send(config.context.error)
         }
     }
 
@@ -169,7 +120,10 @@ public final class Stream {
         Sends a shutdown to secure socket
     */
     public func close() throws {
-        let result = tls_close(context.cContext)
-        guard result != -1 else { throw TLSError.close(context.error) }
+        let result = tls_close(config.context.cContext)
+        try socket.close()
+        guard result == Result.OK else {
+            throw TLSError.close(config.context.error)
+        }
     }
 }
