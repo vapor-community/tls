@@ -52,6 +52,21 @@ public final class Config {
         tls_configure(context.cContext, cConfig)
     }
 
+    public convenience init(
+        mode: Mode,
+        certificates: Certificates = .none,
+        verifyHost: Bool = true,
+        verifyCertificates: Bool = true
+    ) throws {
+        let context = try Context(mode: mode)
+        try self.init(
+            context: context,
+            certificates: certificates,
+            verifyHost: verifyHost,
+            verifyCertificates: verifyCertificates
+        )
+    }
+
     /**
         Loads and sets the appropriate
         certificate files.
