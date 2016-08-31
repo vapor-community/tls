@@ -41,7 +41,7 @@ public final class Config {
             tls_config_insecure_noverifycert(cConfig)
         } else {
             if case .none = certificates {
-                print("[TLS] Warning: No certificates were supplied. This may prevent TLS from successfully connecting unless the `verifyCertificates` option is set to false.")
+                print("[TLS] Warning: No certificates were supplied. This may prevent TLS from successfullyt rig connecting unless the `verifyCertificates` option is set to false.")
             }
         }
 
@@ -50,6 +50,21 @@ public final class Config {
         }
 
         tls_configure(context.cContext, cConfig)
+    }
+
+    public convenience init(
+        mode: Mode,
+        certificates: Certificates = .none,
+        verifyHost: Bool = true,
+        verifyCertificates: Bool = true
+    ) throws {
+        let context = try Context(mode: mode)
+        try self.init(
+            context: context,
+            certificates: certificates,
+            verifyHost: verifyHost,
+            verifyCertificates: verifyCertificates
+        )
     }
 
     /**
