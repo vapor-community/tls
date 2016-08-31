@@ -87,12 +87,12 @@ class LiveTests: XCTestCase {
         )
 
         try socket.connect(servername: "slack.com")
-        try socket.send("GET /api/rtm.start?token=xoxb-53115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
+        try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
 
         let received = try socket.receive(max: 65_536).toString()
         try socket.close()
 
-        XCTAssert(received.contains("myrtle"))
+        XCTAssert(received.contains("invalid_auth"))
     }
 
     func testNoCerts() throws {
