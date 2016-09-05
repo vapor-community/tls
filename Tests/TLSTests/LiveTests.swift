@@ -132,7 +132,7 @@ class LiveTests: XCTestCase {
 
     func testConnectSMTP() throws {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", certificates: .mozilla)
+            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, certificates: .mozilla)
             try stream.connect(servername: "smtp.sendgrid.net")
             let receive = try stream.receive(max: 2048).toString()
             XCTAssert(receive.hasPrefix("220"))
