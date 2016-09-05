@@ -111,4 +111,22 @@ class LiveTests: XCTestCase {
             XCTFail("Wrong error: \(error).")
         }
     }
+
+    func testConnectIcePay() throws {
+        do {
+            let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com", certificates: .mozilla)
+            try stream.connect(servername: "connect.icepay.com")
+            try stream.send("GET /plaintext HTTP/1.1".toBytes())
+            try stream.send("\r\n".toBytes())
+            try stream.send("Accept: */*".toBytes())
+            try stream.send("\r\n".toBytes())
+            try stream.send("Host: connect.icepay.com".toBytes())
+            try stream.send("\r\n\r\n".toBytes()) // double line terminator
+
+            let result = try stream.receive(max: 2048).toString()
+            XCTAssert(result.contains("404"))
+        } catch {
+            XCTFail("Error Connecting: \(error)")
+        }
+    }
 }
