@@ -9,6 +9,9 @@ class LiveTests: XCTestCase {
         ("testInvalidHostname", testInvalidHostname),
         ("testInvalidHostnameNoVerify", testInvalidHostnameNoVerify),
         ("testNoCerts", testNoCerts),
+        ("testSlack", testSlack),
+        ("testConnectIcePay", testConnectIcePay),
+        ("testConnectSMTP", testConnectSMTP),
     ]
 
     func testNoVerify() throws {
@@ -78,23 +81,6 @@ class LiveTests: XCTestCase {
         XCTAssert(received.contains("<!DOCTYPE html>"))
     }
 
-
-    func testSlack() throws {
-        let socket = try TLS.Socket(
-            mode: .client,
-            hostname: "slack.com",
-            certificates: Certificates.mozilla
-        )
-
-        try socket.connect(servername: "slack.com")
-        try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
-
-        let received = try socket.receive(max: 65_536).toString()
-        try socket.close()
-
-        XCTAssert(received.contains("invalid_auth"))
-    }
-
     func testNoCerts() throws {
         let socket = try TLS.Socket(
             mode: .client,
@@ -111,6 +97,22 @@ class LiveTests: XCTestCase {
         } catch {
             XCTFail("Wrong error: \(error).")
         }
+    }
+
+    func testSlack() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "slack.com",
+            certificates: Certificates.mozilla
+        )
+
+        try socket.connect(servername: "slack.com")
+        try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
+
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+
+        XCTAssert(received.contains("invalid_auth"))
     }
 
     func testConnectIcePay() throws {
