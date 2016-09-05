@@ -22,6 +22,7 @@ public final class Context {
         - parameter certificates: The certificates for the Client or Server.
     */
     public init(mode: Mode) throws {
+        // FIXME: Dispatch once on updated snapshot -- ok to call multiple times, but NOT concurrently. Will fail.
         tls_init()
 
         switch mode {
