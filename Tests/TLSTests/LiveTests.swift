@@ -135,7 +135,7 @@ class LiveTests: XCTestCase {
 
     func testConnectSMTP() {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, cipher: .secure)
+            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465)
             try stream.connect(servername: "smtp.sendgrid.net")
             // SMTP Server initiates w/ greeting. Receive first here is proper
             let receive = try stream.receive(max: 2048).toString()
