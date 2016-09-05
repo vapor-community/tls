@@ -133,15 +133,15 @@ class LiveTests: XCTestCase {
         }
     }
 
-    func testConnectSMTP() throws {
+    func testConnectSMTP() {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465)
+            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, cipher: .secure)
             try stream.connect(servername: "smtp.sendgrid.net")
             // SMTP Server initiates w/ greeting. Receive first here is proper
             let receive = try stream.receive(max: 2048).toString()
             XCTAssert(receive.hasPrefix("220"))
-        } catch {
-            XCTFail("SMTP Connection Failed: \(error)")
-        }
+        } catch TLSError.receive(_) {
+            XCTFail("SMTP TLS Connection Failed")
+        } catch { }
     }
 }

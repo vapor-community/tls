@@ -26,7 +26,8 @@ public final class Socket {
         port: UInt16 = 443,
         certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
-        verifyCertificates: Bool = true
+        verifyCertificates: Bool = true,
+        cipher: Config.Cipher = .compat
     ) throws {
         let context = try Context(mode: mode)
 
@@ -34,7 +35,8 @@ public final class Socket {
             context: context,
             certificates: certificates,
             verifyHost: verifyHost,
-            verifyCertificates: verifyCertificates
+            verifyCertificates: verifyCertificates,
+            cipher: cipher
         )
 
         let address = InternetAddress(hostname: hostname, port: port)
