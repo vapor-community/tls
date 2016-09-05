@@ -12,4 +12,5 @@ public enum TLSError: Error {
     case receive(String)
     case close(String)
     case setTimeout(String)
+    case cipherListFailed
 }

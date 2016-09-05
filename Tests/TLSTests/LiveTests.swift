@@ -98,7 +98,8 @@ class LiveTests: XCTestCase {
     func testNoCerts() throws {
         let socket = try TLS.Socket(
             mode: .client,
-            hostname: "httpbin.org"
+            hostname: "httpbin.org",
+            certificates: .none
         )
 
         do {
@@ -114,7 +115,7 @@ class LiveTests: XCTestCase {
 
     func testConnectIcePay() throws {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com", certificates: .mozilla)
+            let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com")
             try stream.connect(servername: "connect.icepay.com")
             try stream.send("GET /plaintext HTTP/1.1".toBytes())
             try stream.send("\r\n".toBytes())
@@ -132,7 +133,7 @@ class LiveTests: XCTestCase {
 
     func testConnectSMTP() throws {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, certificates: .mozilla)
+            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465)
             try stream.connect(servername: "smtp.sendgrid.net")
             // SMTP Server initiates w/ greeting. Receive first here is proper
             let receive = try stream.receive(max: 2048).toString()

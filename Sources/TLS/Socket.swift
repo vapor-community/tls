@@ -24,7 +24,7 @@ public final class Socket {
         mode: Mode,
         hostname: String,
         port: UInt16 = 443,
-        certificates: Certificates = .none,
+        certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true
     ) throws {
