@@ -9,6 +9,9 @@ class LiveTests: XCTestCase {
         ("testInvalidHostname", testInvalidHostname),
         ("testInvalidHostnameNoVerify", testInvalidHostnameNoVerify),
         ("testNoCerts", testNoCerts),
+        ("testSlack", testSlack),
+        ("testConnectIcePay", testConnectIcePay),
+        ("testConnectSMTP", testConnectSMTP),
     ]
 
     func testNoVerify() throws {
@@ -78,6 +81,23 @@ class LiveTests: XCTestCase {
         XCTAssert(received.contains("<!DOCTYPE html>"))
     }
 
+    func testNoCerts() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "httpbin.org",
+            certificates: .none
+        )
+
+        do {
+            try socket.connect(servername: "nothttpbin.org")
+
+            XCTFail("Should not have connected.")
+        } catch TLSError.connect(_) {
+
+        } catch {
+            XCTFail("Wrong error: \(error).")
+        }
+    }
 
     func testSlack() throws {
         let socket = try TLS.Socket(
@@ -95,20 +115,33 @@ class LiveTests: XCTestCase {
         XCTAssert(received.contains("invalid_auth"))
     }
 
-    func testNoCerts() throws {
-        let socket = try TLS.Socket(
-            mode: .client,
-            hostname: "httpbin.org"
-        )
-
+    func testConnectIcePay() throws {
         do {
-            try socket.connect(servername: "nothttpbin.org")
+            let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com")
+            try stream.connect(servername: "connect.icepay.com")
+            try stream.send("GET /plaintext HTTP/1.1".toBytes())
+            try stream.send("\r\n".toBytes())
+            try stream.send("Accept: */*".toBytes())
+            try stream.send("\r\n".toBytes())
+            try stream.send("Host: connect.icepay.com".toBytes())
+            try stream.send("\r\n\r\n".toBytes()) // double line terminator
 
-            XCTFail("Should not have connected.")
-        } catch TLSError.connect(_) {
-
+            let result = try stream.receive(max: 2048).toString()
+            XCTAssert(result.contains("404"))
         } catch {
-            XCTFail("Wrong error: \(error).")
+            XCTFail("SSL Connection Failed: \(error)")
+        }
+    }
+
+    func testConnectSMTP() {
+        do {
+            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, certificates: .none, verifyCertificates: false)
+            try stream.connect(servername: "smtp.sendgrid.net")
+            // SMTP Server initiates w/ greeting. Receive first here is proper
+            let receive = try stream.receive(max: 2048).toString()
+            XCTAssert(receive.hasPrefix("220"))
+        } catch {
+            XCTFail("SMTP TLS Connection Failed: \(error)")
         }
     }
 }

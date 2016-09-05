@@ -3,6 +3,13 @@ import CLibreSSL
 /// Configuration for the TLS communication.
 /// See http://man.openbsd.org/OpenBSD-current/man3/tls_init.3
 public final class Config {
+    public enum Cipher: String {
+        case secure
+        case compat
+        case legacy
+        case insecure
+    }
+
     public typealias CConfig = OpaquePointer
 
     public let context: Context
@@ -23,13 +30,19 @@ public final class Config {
     
     public init(
         context: Context,
-        certificates: Certificates = .none,
+        certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
-        verifyCertificates: Bool = true
+        verifyCertificates: Bool = true,
+        cipher: Cipher = .compat
     ) throws {
         self.context = context
 
         cConfig = tls_config_new()
+
+        let cipherSetResult = tls_config_set_ciphers(cConfig, cipher.rawValue)
+        guard cipherSetResult != -1 else {
+            throw TLSError.cipherListFailed
+        }
 
         self.certificates = certificates
         self.verifyHost = verifyHost
@@ -54,7 +67,7 @@ public final class Config {
 
     public convenience init(
         mode: Mode,
-        certificates: Certificates = .none,
+        certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true
     ) throws {
