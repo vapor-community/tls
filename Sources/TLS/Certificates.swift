@@ -35,7 +35,11 @@ public enum Certificates {
 
 extension Certificates {
     public static var mozilla: Certificates {
-        let root = #file.components(separatedBy: "/").dropLast(3).joined(separator: "/")
+        let root = #file.characters
+            .split(separator: "/", omittingEmptySubsequences: false)
+            .dropLast(3)
+            .map { String($0) }
+            .joined(separator: "/")
         return .certificateAuthority(
             signature: .signedFile(
                 caCertificateFile: root + "/Certs/mozilla_certs.pem"
