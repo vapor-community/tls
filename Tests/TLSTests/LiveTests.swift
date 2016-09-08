@@ -11,7 +11,6 @@ class LiveTests: XCTestCase {
         ("testNoCerts", testNoCerts),
         ("testSlack", testSlack),
         ("testConnectIcePay", testConnectIcePay),
-        ("testConnectSMTP", testConnectSMTP),
     ]
 
     func testNoVerify() throws {
@@ -130,18 +129,6 @@ class LiveTests: XCTestCase {
             XCTAssert(result.contains("404"))
         } catch {
             XCTFail("SSL Connection Failed: \(error)")
-        }
-    }
-
-    func testConnectSMTP() {
-        do {
-            let stream = try TLS.Socket(mode: .client, hostname: "smtp.sendgrid.net", port: 465, certificates: .none, verifyCertificates: false)
-            try stream.connect(servername: "smtp.sendgrid.net")
-            // SMTP Server initiates w/ greeting. Receive first here is proper
-            let receive = try stream.receive(max: 2048).toString()
-            XCTAssert(receive.hasPrefix("220"))
-        } catch {
-            XCTFail("SMTP TLS Connection Failed: \(error)")
         }
     }
 }
