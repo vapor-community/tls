@@ -11,7 +11,6 @@ class LiveTests: XCTestCase {
         ("testNoCerts", testNoCerts),
         ("testSlack", testSlack),
         ("testConnectIcePay", testConnectIcePay),
-        ("testConnectSMTP", testConnectSMTP),
     ]
 
     func testNoVerify() throws {
