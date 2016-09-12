@@ -5,6 +5,10 @@ public enum TLSError: Error {
     case setKeyFile(String)
     case setCAPath(path: String, String)
     case setCAFile(file: String, String)
+    case setCABytes(String)
+    case setCertificateBytes(String)
+    case setKeyBytes(String)
+
 
     case accept(String)
     case connect(String)
