@@ -47,16 +47,6 @@ extension Certificates {
             .map { String($0) }
             .joined(separator: "/")
 
-        do {
-            print("Debug loading: \(root + "/Certs/mozilla_certs.pem")")
-            let bytes = try DataFile().load(path: root + "/Certs/mozilla_certs.pem")
-            print("Start bytes")
-            print(bytes)
-            print("End bytes")
-        } catch {
-            print("Load failed: \(error)")
-        }
-
         return .certificateAuthority(
             signature: .signedFile(
                 caCertificateFile: root + "/Certs/mozilla_certs.pem"
