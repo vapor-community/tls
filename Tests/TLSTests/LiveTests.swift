@@ -1,6 +1,8 @@
 import XCTest
 import SocksCore
 @testable import TLS
+import Foundation
+import Core
 
 class LiveTests: XCTestCase {
     static var allTests = [

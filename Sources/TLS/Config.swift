@@ -94,6 +94,10 @@ public final class Config {
             guard tls_config_set_ca_file(cConfig, file) == Result.OK else {
                 throw TLSError.setCAFile(file: file, context.error)
             }
+        case .signedBytes(caCertificateBytes: let bytes):
+            guard tls_config_set_ca_mem(cConfig, bytes, bytes.count) == Result.OK else {
+                throw TLSError.setCABytes(context.error)
+            }
         case .selfSigned:
             break
         }
@@ -115,6 +119,14 @@ public final class Config {
             }
             try loadSignature(signature)
         case .certificateAuthority(let signature):
+            try loadSignature(signature)
+        case .bytes(certificateBytes: let cert, keyBytes: let key, signature: let signature):
+            guard tls_config_set_cert_mem(cConfig, cert, cert.count) == Result.OK else {
+                throw TLSError.setCertificateBytes(context.error)
+            }
+            guard tls_config_set_key_mem(cConfig, key, key.count) == Result.OK else {
+                throw TLSError.setKeyBytes(context.error)
+            }
             try loadSignature(signature)
         case .none:
             break
