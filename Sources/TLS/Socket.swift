@@ -20,6 +20,9 @@ public final class Socket {
         self.socket = socket
     }
 
+    public var currSocket: TCPInternetSocket?
+    public var currContext: OpaquePointer?
+
     public convenience init(
         mode: Mode,
         hostname: String,
@@ -57,6 +60,8 @@ public final class Socket {
             socket.descriptor,
             servername
         )
+        currSocket = socket
+        currContext = config.context.cContext
 
         guard result == Result.OK else {
             throw TLSError.connect(config.context.error)
@@ -69,11 +74,13 @@ public final class Socket {
          This should only be called if the Context's mode is `.server`
     */
     public func accept() throws {
+        let new = try socket.accept()
         let result = tls_accept_socket(
             config.context.cContext,
-            nil,
-            socket.descriptor
+            &currContext,
+            new.descriptor
         )
+        currSocket = new
 
         guard result == Result.OK else {
             throw TLSError.accept(config.context.error)
@@ -91,7 +98,7 @@ public final class Socket {
             pointer.deallocate(capacity: max)
         }
 
-        let result = tls_read(config.context.cContext, pointer, max)
+        let result = tls_read(currContext, pointer, max)
         let bytesRead = Int(result)
 
         guard bytesRead >= 0 else {
@@ -111,7 +118,7 @@ public final class Socket {
     public func send(_ bytes: [UInt8]) throws {
         let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
 
-        let bytesSent = tls_write(config.context.cContext, buffer.baseAddress, bytes.count)
+        let bytesSent = tls_write(currContext, buffer.baseAddress, bytes.count)
 
         guard bytesSent >= 0 else {
             throw TLSError.send(config.context.error)
@@ -122,8 +129,8 @@ public final class Socket {
         Sends a shutdown to secure socket
     */
     public func close() throws {
-        let result = tls_close(config.context.cContext)
-        try socket.close()
+        let result = tls_close(currContext)
+        try currSocket?.close()
         guard result == Result.OK else {
             throw TLSError.close(config.context.error)
         }
