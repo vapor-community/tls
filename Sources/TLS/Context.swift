@@ -13,7 +13,7 @@ import Foundation
 public final class Context {
     public typealias CContext = OpaquePointer
     public let mode: Mode
-    public let cContext: CContext
+    public var cContext: CContext
 
     /**
         Creates an SSL Context.
