@@ -116,12 +116,15 @@ public final class Socket {
          - parameter bytes: An array of bytes to send.
     */
     public func send(_ bytes: [UInt8]) throws {
+        var totalBytesSent = 0
         let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
-
-        let bytesSent = tls_write(currContext, buffer.baseAddress, bytes.count)
-
-        guard bytesSent >= 0 else {
-            throw TLSError.send(config.context.error)
+        
+        while totalBytesSent < bytes.count {
+            let bytesSent = tls_write(currContext, buffer.baseAddress?.advanced(by: totalBytesSent), bytes.count - totalBytesSent)
+            if bytesSent <= 0 {
+                throw TLSError.send(config.context.error)
+            }
+            totalBytesSent += bytesSent
         }
     }
 
