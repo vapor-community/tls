@@ -93,12 +93,16 @@ public final class Socket {
          - parameter max: The maximum amount of bytes to receive.
     */
     public func receive(max: Int) throws -> [UInt8]  {
+        guard let context = currContext else {
+            throw TLSError.receive("Context is nil")
+        }
+
         let pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: max)
         defer {
             pointer.deallocate(capacity: max)
         }
 
-        let result = tls_read(currContext, pointer, max)
+        let result = tls_read(context, pointer, max)
         let bytesRead = Int(result)
 
         guard bytesRead >= 0 else {
@@ -116,11 +120,18 @@ public final class Socket {
          - parameter bytes: An array of bytes to send.
     */
     public func send(_ bytes: [UInt8]) throws {
+        guard let context = currContext else {
+            throw TLSError.send("Context is nil")
+        }
+
         var totalBytesSent = 0
         let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
-        
+        guard let bufferBaseAddress = buffer.baseAddress else {
+            throw TLSError.send("Failed to get buffer base address")
+        }
+    
         while totalBytesSent < bytes.count {
-            let bytesSent = tls_write(currContext, buffer.baseAddress?.advanced(by: totalBytesSent), bytes.count - totalBytesSent)
+            let bytesSent = tls_write(context, bufferBaseAddress.advanced(by: totalBytesSent), bytes.count - totalBytesSent)
             if bytesSent <= 0 {
                 throw TLSError.send(config.context.error)
             }
@@ -132,7 +143,10 @@ public final class Socket {
         Sends a shutdown to secure socket
     */
     public func close() throws {
-        let result = tls_close(currContext)
+        var result = Result.OK
+        if let context = currContext {
+            result = tls_close(context)
+        }
         try currSocket?.close()
         guard result == Result.OK else {
             throw TLSError.close(config.context.error)
