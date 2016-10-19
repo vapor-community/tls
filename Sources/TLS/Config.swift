@@ -62,7 +62,10 @@ public final class Config {
             tls_config_insecure_noverifyname(cConfig)
         }
 
-        tls_configure(context.cContext, cConfig)
+        let configureResult = tls_configure(context.cContext, cConfig)
+        guard configureResult != -1 else {
+            throw TLSError.configureFailed(context.error)
+        }
     }
 
     public convenience init(
