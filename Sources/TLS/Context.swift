@@ -26,7 +26,7 @@ public final class Context {
         - parameter certificates: The certificates for the Client or Server.
     */
     public init(mode: Mode) throws {
-        Context.initializeTlsOnce
+        _ = Context.initializeTlsOnce
         
         switch mode {
         case .server:
