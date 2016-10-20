@@ -9,11 +9,18 @@ public final class Config {
         case legacy
         case insecure
     }
-
+    public enum TLSProtocol: String {
+        case tlsv1_0 = "tlsv1.0"
+        case tlsv1_1 = "tlsv1.1"
+        case tlsv1_2 = "tlsv1.2"
+        case secure = "secure" // currently TLSv1.2 only
+        case all = "all"
+    }
+    
     public typealias CConfig = OpaquePointer
-
+    
     public let context: Context
-
+    
     public let cConfig: CConfig
     
     /// Specifies the used certificates.
@@ -33,23 +40,30 @@ public final class Config {
         certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
-        cipher: Cipher = .compat
-    ) throws {
+        cipher: Cipher = .compat,
+        proto: TLSProtocol = .all
+        ) throws {
         self.context = context
-
+        
         cConfig = tls_config_new()
-
+        
+        var protocols:UInt32 = 0
+        guard tls_config_parse_protocols(&protocols, proto.rawValue) >= 0 else {
+            throw TLSError.parsingProtocolsFailed(context.error)
+        }
+        tls_config_set_protocols(cConfig, protocols)
+        
         let cipherSetResult = tls_config_set_ciphers(cConfig, cipher.rawValue)
         guard cipherSetResult != -1 else {
             throw TLSError.cipherListFailed
         }
-
+        
         self.certificates = certificates
         self.verifyHost = verifyHost
         self.verifyCertificates = verifyCertificates
-
+        
         try loadCertificates(certificates)
-
+        
         if !verifyCertificates  {
             tls_config_insecure_noverifycert(cConfig)
         } else {
@@ -57,23 +71,22 @@ public final class Config {
                 print("[TLS] Warning: No certificates were supplied. This may prevent TLS from successfully connecting unless the `verifyCertificates` option is set to false.")
             }
         }
-
+        
         if !verifyHost {
             tls_config_insecure_noverifyname(cConfig)
         }
-
-        let configureResult = tls_configure(context.cContext, cConfig)
-        guard configureResult != -1 else {
+        
+        guard tls_configure(context.cContext, cConfig) >= 0 else {
             throw TLSError.configureFailed(context.error)
         }
     }
-
+    
     public convenience init(
         mode: Mode,
         certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true
-    ) throws {
+        ) throws {
         let context = try Context(mode: mode)
         try self.init(
             context: context,
@@ -82,11 +95,11 @@ public final class Config {
             verifyCertificates: verifyCertificates
         )
     }
-
+    
     /**
-        Loads and sets the appropriate
-        certificate files.
-    */
+     Loads and sets the appropriate
+     certificate files.
+     */
     private func loadSignature(_ signature: Certificates.Signature) throws {
         switch signature {
         case .signedDirectory(caCertificateDirectory: let dir):
@@ -105,7 +118,7 @@ public final class Config {
             break
         }
     }
-
+    
     private func loadCertificates(_ certificates: Certificates) throws {
         switch certificates {
         case .chain(let file, let signature):
@@ -135,9 +148,9 @@ public final class Config {
             break
         }
     }
-
+    
     deinit {
         tls_config_free(cConfig)
     }
-
+    
 }
