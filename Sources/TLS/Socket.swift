@@ -30,7 +30,8 @@ public final class Socket {
         certificates: Certificates = .mozilla,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
-        cipher: Config.Cipher = .compat
+        cipher: Config.Cipher = .compat,
+        proto: [Config.TLSProtocol] = [.all]
     ) throws {
         let context = try Context(mode: mode)
 
@@ -39,7 +40,8 @@ public final class Socket {
             certificates: certificates,
             verifyHost: verifyHost,
             verifyCertificates: verifyCertificates,
-            cipher: cipher
+            cipher: cipher,
+            proto: proto
         )
 
         let address = InternetAddress(hostname: hostname, port: port)

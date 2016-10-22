@@ -41,14 +41,15 @@ public final class Config {
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
         cipher: Cipher = .compat,
-        proto: TLSProtocol = .all
+        proto: [Config.TLSProtocol] = [.all]
         ) throws {
         self.context = context
         
         cConfig = tls_config_new()
         
+        let protocolsString = proto.count > 0 ? proto.map { $0.rawValue }.joined(separator: ",") : TLSProtocol.all.rawValue
         var protocols:UInt32 = 0
-        guard tls_config_parse_protocols(&protocols, proto.rawValue) >= 0 else {
+        guard tls_config_parse_protocols(&protocols, protocolsString) >= 0 else {
             throw TLSError.parsingProtocolsFailed(context.error)
         }
         tls_config_set_protocols(cConfig, protocols)
