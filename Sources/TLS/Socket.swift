@@ -111,7 +111,6 @@ public final class Socket {
             throw TLSError.receive(config.context.error)
         }
 
-
         let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: bytesRead)
         return Array(buffer)
     }
