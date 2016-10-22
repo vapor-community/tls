@@ -58,7 +58,7 @@ class LiveTests: XCTestCase {
             try socket.send("GET / HTTP/1.1\r\n\r\n".toBytes())
 
             XCTFail("Should not have sent.")
-        } catch TLSError.send(_) {
+        } catch TLSError.handshake(_) {
 
         } catch {
             XCTFail("Wrong error: \(error).")

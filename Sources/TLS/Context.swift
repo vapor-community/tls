@@ -14,6 +14,10 @@ public final class Context {
     public typealias CContext = OpaquePointer
     public let mode: Mode
     public var cContext: CContext
+    
+    static let initializeTlsOnce = {
+        tls_init()
+    }()
 
     /**
         Creates an SSL Context.
@@ -22,9 +26,8 @@ public final class Context {
         - parameter certificates: The certificates for the Client or Server.
     */
     public init(mode: Mode) throws {
-        // FIXME: Dispatch once on updated snapshot -- ok to call multiple times, but NOT concurrently. Will fail.
-        tls_init()
-
+        _ = Context.initializeTlsOnce
+        
         switch mode {
         case .server:
             cContext = tls_server()
