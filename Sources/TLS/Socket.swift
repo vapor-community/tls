@@ -96,11 +96,13 @@ public final class Socket {
         currSocket = new
         
         guard result == Result.OK else {
+            try new.close()
             throw TLSError.accept(config.context.error)
         }
         
         // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
         guard tls_handshake(currContext) == Result.OK else {
+            try new.close()
             throw TLSError.handshake(lastError ?? "Unknown")
         }
     }
