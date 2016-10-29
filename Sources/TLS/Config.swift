@@ -37,7 +37,7 @@ public final class Config {
     
     public init(
         context: Context,
-        certificates: Certificates = .mozilla,
+        certificates: Certificates = .defaults,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
         cipher: Cipher = .compat,
@@ -84,7 +84,7 @@ public final class Config {
     
     public convenience init(
         mode: Mode,
-        certificates: Certificates = .mozilla,
+        certificates: Certificates = .defaults,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true
         ) throws {

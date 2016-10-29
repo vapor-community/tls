@@ -33,7 +33,7 @@ public final class Socket {
         mode: Mode,
         hostname: String,
         port: UInt16 = 443,
-        certificates: Certificates = .mozilla,
+        certificates: Certificates = .defaults,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
         cipher: Config.Cipher = .compat,

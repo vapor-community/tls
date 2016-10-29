@@ -34,8 +34,7 @@ class LiveTests: XCTestCase {
     func testWithCACerts() throws {
         let socket = try TLS.Socket(
             mode: .client,
-            hostname: "httpbin.org",
-            certificates: Certificates.mozilla
+            hostname: "httpbin.org"
         )
 
         try socket.connect(servername: "httpbin.org")
@@ -104,8 +103,7 @@ class LiveTests: XCTestCase {
     func testSlack() throws {
         let socket = try TLS.Socket(
             mode: .client,
-            hostname: "slack.com",
-            certificates: Certificates.mozilla
+            hostname: "slack.com"
         )
 
         try socket.connect(servername: "slack.com")
@@ -115,6 +113,36 @@ class LiveTests: XCTestCase {
         try socket.close()
 
         XCTAssert(received.contains("invalid_auth"))
+    }
+    
+    func testWeixingApi() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "api.weixin.qq.com"
+        )
+        
+        try socket.connect(servername: "api.weixin.qq.com")
+        try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".toBytes())
+        
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+        
+        XCTAssert(received.contains("40002"))
+    }
+
+    func testGoogleMapsApi() throws {
+        let socket = try TLS.Socket(
+            mode: .client,
+            hostname: "maps.googleapis.com"
+        )
+        
+        try socket.connect(servername: "maps.googleapis.com")
+        try socket.send("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
+        
+        let received = try socket.receive(max: 65_536).toString()
+        try socket.close()
+        
+        XCTAssert(received.contains("REQUEST_DENIED"))
     }
 
     func testConnectIcePay() throws {
