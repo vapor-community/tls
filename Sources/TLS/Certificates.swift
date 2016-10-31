@@ -37,14 +37,14 @@ public enum Certificates {
             return signature.isSelfSigned
         }
     }
-    
+
     public static var defaults: Certificates {
         return .openbsd
     }
 }
 
 extension Certificates {
-    @available(*, deprecated)
+    @available(*, deprecated: 1.0, message: "Use `.openbsd` instead.")
     public static var mozilla: Certificates {
         let root = #file.characters
             .split(separator: "/", omittingEmptySubsequences: false)
@@ -67,7 +67,7 @@ extension Certificates {
             .dropLast(3)
             .map { String($0) }
             .joined(separator: "/")
-        
+
         return .certificateAuthority(
             signature: .signedFile(
                 caCertificateFile: root + "/Certs/openbsd_certs.pem"
