@@ -74,4 +74,18 @@ extension Certificates {
             )
         )
     }
+    
+    public static var system: Certificates {
+#if os(Linux)
+        let caCertFile = "/etc/ssl/certs/ca-certificates.crt"
+#else
+        let caCertFile = "/etc/ssl/cert.pem"
+#endif
+        
+        return .certificateAuthority(
+            signature: .signedFile(
+                caCertificateFile: caCertFile
+            )
+        )
+    }
 }
