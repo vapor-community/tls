@@ -94,7 +94,9 @@ class LiveTests: XCTestCase {
 
             XCTFail("Should not have connected.")
         } catch TLSError.connect(_) {
-
+            // on Linux, the TLS setup breaks
+        } catch TLSError.handshake(_) {
+            // on OSX, SNI throws a handshake error: "name 'nothttpbin.org' not present in server certificate"
         } catch {
             XCTFail("Wrong error: \(error).")
         }
