@@ -39,7 +39,11 @@ public enum Certificates {
     }
 
     public static var defaults: Certificates {
-        return .system
+        if let system = system {
+            return system
+        } else {
+            return openbsd
+        }
     }
 }
 
@@ -75,7 +79,6 @@ extension Certificates {
         )
     }
     
-    public static var system: Certificates {
 #if os(Linux)
         let caCertFile = "/etc/ssl/certs/ca-certificates.crt"
 #else
@@ -85,6 +88,7 @@ extension Certificates {
         return .certificateAuthority(
             signature: .signedFile(
                 caCertificateFile: caCertFile
+    static var system: Certificates? {
             )
         )
     }
