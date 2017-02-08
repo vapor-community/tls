@@ -39,7 +39,7 @@ public enum Certificates {
     }
 
     public static var defaults: Certificates {
-        return .openbsd
+        return .system
     }
 }
 
