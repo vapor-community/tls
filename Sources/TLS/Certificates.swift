@@ -1,4 +1,5 @@
 import Core
+import libc
 
 public enum Certificates {
     public enum Signature {
@@ -39,7 +40,11 @@ public enum Certificates {
     }
 
     public static var defaults: Certificates {
-        return .openbsd
+        if let system = system {
+            return system
+        } else {
+            return openbsd
+        }
     }
 }
 
@@ -73,5 +78,39 @@ extension Certificates {
                 caCertificateFile: root + "/Certs/openbsd_certs.pem"
             )
         )
+    }
+    
+    static var system: Certificates? {
+        let paths = [
+            "/etc/ssl/cert.pem",                  // OSX OpenSSL
+            "/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu/Gentoo etc.
+            "/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
+            "/etc/ssl/ca-bundle.pem",             // OpenSUSE
+            "/etc/pki/tls/cacert.pem",            // OpenELEC
+            "/etc/ssl/certs",                     // SLES10/SLES11, https://golang.org/issue/12139
+            "/system/etc/security/cacerts"        // Android
+        ]
+
+        return paths.flatMap { (path: String) -> Certificates? in
+            guard fileExists(path) else {
+                return nil
+            }
+            
+            return .certificateAuthority(
+                signature: .signedFile(
+                    caCertificateFile: path
+                )
+            )
+        }.first
+    }
+}
+
+fileprivate func fileExists(_ path: String) -> Bool {
+    return path.utf8CString.withUnsafeBufferPointer {
+        guard let baseAddress = $0.baseAddress else {
+            return false
+        }
+        
+        return access(baseAddress, R_OK) == 0
     }
 }
