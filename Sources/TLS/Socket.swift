@@ -5,6 +5,7 @@ public final class Socket {
     public let socket: TCPInternetSocket
     public let context: Context
     public var cSSL: CSSL?
+    public var currentSocket: TCPInternetSocket?
 
     /// Creates a Socket from an SSL context and an
     /// unsecured socket's file descriptor.
@@ -50,38 +51,23 @@ public final class Socket {
 
         let ssl = SSL_new(context.cContext)
         SSL_set_fd(ssl, socket.descriptor)
-//        let connectResult = tls_connect_socket(
-//            config.context.cContext,
-//            socket.descriptor,
-//            servername
-//        )
-
-        let connectResult = SSL_connect(ssl)
-
-        //currSocket = socket
         cSSL = ssl
+
+        if context.verifyHost {
+            let param = SSL_get0_param(ssl)
+            X509_VERIFY_PARAM_set_hostflags(
+                param,
+                UInt32(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS)
+            )
+            X509_VERIFY_PARAM_set1_host(param, servername, 0);
+            SSL_set_verify(ssl, SSL_VERIFY_PEER, nil)
+        }
         
-        guard connectResult == 1 else {
+        guard SSL_connect(ssl) == 1 else {
             throw TLSError.connect(context.error)
         }
 
-        guard let cert = SSL_get_peer_certificate(ssl) else {
-            throw "No certificates"
-        }
-
-
-        let subject = X509_NAME_oneline(X509_get_subject_name(cert), nil, 0)
-        let issuer = X509_NAME_oneline(X509_get_issuer_name(cert), nil, 0)
-
-        print(subject)
-        print(issuer)
-
-        free(subject)
-        free(issuer)
-        X509_free(cert)
-
-        // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
-        guard SSL_do_handshake(ssl) == Result.OK else {
+        guard SSL_do_handshake(ssl) == 1 else {
             throw TLSError.handshake(context.error)
         }
     }
@@ -90,25 +76,26 @@ public final class Socket {
     ///
     /// This should only be called if the Context's mode is `.server`
     public func accept() throws {
-        let new = try socket.accept()
-        print(new.descriptor)
-        let ssl = SSL_new(context.cContext)
-        SSL_set_fd(ssl, new.descriptor)
+        let client = try socket.accept()
 
-        // currSocket = new
+        let ssl = SSL_new(context.cContext)
+        SSL_set_fd(ssl, client.descriptor)
+        currentSocket = client
         cSSL = ssl
 
         let result = SSL_accept(ssl)
         print(result)
         
         guard result == 1 else {
-            try new.close()
+            try client.close()
             throw TLSError.accept(context.error)
         }
+
+        print("before handshake")
         
         // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
         guard SSL_do_handshake(ssl) == 1 else {
-            try new.close()
+            try client.close()
             throw TLSError.handshake(context.error)
         }
         print("handshake done")
@@ -122,15 +109,18 @@ public final class Socket {
         defer {
             pointer.deallocate(capacity: max)
         }
+
+        let bytesRead = SSL_read(cSSL, pointer, Int32(max))
         
-        let result = SSL_read(cSSL, pointer, Int32(max))
-        let bytesRead = Int(result)
-        
-        guard bytesRead >= 0 else {
+        if bytesRead <= 0 {
+            print(bytesRead)
+            let res = SSL_get_error(cSSL, bytesRead)
+            print(res)
+            print(String(validatingUTF8: strerror(errno))!)
             throw TLSError.receive(context.error)
         }
         
-        let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: bytesRead)
+        let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: Int(bytesRead))
         return Array(buffer)
     }
     
@@ -138,28 +128,29 @@ public final class Socket {
     ///
     /// - parameter bytes: An array of bytes to send.
     public func send(_ bytes: Bytes) throws {
-        print("TLS send")
-        var bytes = bytes
-        print("TLS enter while")
-        print("here")
-        let bytesSent = SSL_write(
-            cSSL,
-            &bytes,
-            Int32(bytes.count)
-        )
-        print("there")
-        print(bytesSent)
+        var totalBytesSent = 0
+        let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
+        guard let bufferBaseAddress = buffer.baseAddress else {
+            throw TLSError.send("Failed to get buffer base address")
+        }
 
-        if bytesSent <= 0 {
-            let res = SSL_get_error(cSSL, bytesSent)
-            print(res)
-            throw TLSError.send(context.error)
+        while totalBytesSent < bytes.count {
+            let bytesSent = SSL_write(
+                cSSL,
+                bufferBaseAddress.advanced(by: totalBytesSent),
+                Int32(bytes.count - totalBytesSent)
+            )
+            if bytesSent <= 0 {
+                throw TLSError.send(context.error)
+            }
+
+            totalBytesSent += Int(bytesSent)
         }
     }
     
     ///Sends a shutdown to secure socket
     public func close() throws {
         SSL_free(cSSL)
-        // try currSocket?.close()
+        try currentSocket?.close()
     }
 }

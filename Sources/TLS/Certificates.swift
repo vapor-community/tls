@@ -6,7 +6,6 @@ public enum Certificates {
         case selfSigned
         case signedFile(caCertificateFile: String)
         case signedDirectory(caCertificateDirectory: String)
-        case signedBytes(caCertificateBytes: Bytes)
 
         public var isSelfSigned: Bool {
             switch self {
@@ -55,6 +54,8 @@ extension Certificates {
             .dropLast(3)
             .map { String($0) }
             .joined(separator: "/")
+
+        print(root + "/Certs/openbsd_certs.pem")
 
         return .certificateAuthority(
             signature: .signedFile(

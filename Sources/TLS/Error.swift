@@ -8,6 +8,8 @@ public enum TLSError: Error {
     case setCABytes(String)
     case setCertificateBytes(String)
     case setKeyBytes(String)
+    case setCipher(String)
+    case createContext
 
 
     case accept(String)

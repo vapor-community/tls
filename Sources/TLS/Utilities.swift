@@ -9,5 +9,3 @@ extension Int {
         return Int32(self)
     }
 }
-
-extension String: Error { }

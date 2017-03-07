@@ -49,18 +49,10 @@ public final class Context {
         }
 
         guard let ctx = SSL_CTX_new(method) else {
-            throw "no context"
+            throw TLSError.createContext
         }
 
         SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
-
-        guard SSL_CTX_set_cipher_list(
-            ctx,
-            cipherSuite
-                ?? "DEFAULT"
-        ) == 1 else {
-            throw "cipher problem"
-        }
 
         if mode == .client {
             SSL_CTX_ctrl(
@@ -73,27 +65,23 @@ public final class Context {
             )
         }
 
-        if !verifyCertificates {
+        if !verifyCertificates || certificates.areSelfSigned {
             SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nil)
         }
-
-        //        let protocolsString = proto.count > 0 ? proto.map { $0.rawValue }.joined(separator: ",") : TLSProtocol.all.rawValue
-        //        var protocols:UInt32 = 0
-        //        guard tls_config_parse_protocols(&protocols, protocolsString) >= 0 else {
-        //            throw TLSError.parsingProtocolsFailed(context.error)
-        //        }
-        //        tls_config_set_protocols(cConfig, protocols)
-        //
-        //        let cipherSetResult = tls_config_set_ciphers(cConfig, cipher.rawValue)
-        //        guard cipherSetResult != -1 else {
-        //            throw TLSError.cipherListFailed
-        //        }
 
         self.certificates = certificates
         self.cContext = ctx
         self.mode = mode
         self.verifyHost = verifyHost
         self.verifyCertificates = verifyCertificates
+
+        guard SSL_CTX_set_cipher_list(
+            ctx,
+            cipherSuite
+                ?? "DEFAULT"
+            ) == 1 else {
+                throw TLSError.setCipher(error)
+        }
 
         try loadCertificates(certificates)
     }
@@ -131,8 +119,6 @@ extension Context {
             guard SSL_CTX_load_verify_locations(cContext, file, nil) == 1 else {
                 throw TLSError.setCAFile(file: file, error)
             }
-        case .signedBytes(caCertificateBytes: var bytes):
-            throw "unsupported signed bytes ca"
         case .selfSigned:
             break
         }
@@ -141,19 +127,21 @@ extension Context {
     internal func loadCertificates(_ certificates: Certificates) throws {
         switch certificates {
         case .chain(let file, let signature):
-            guard SSL_CTX_use_certificate_file(cContext, file, SSL_FILETYPE_PEM) == Result.OK else {
+            guard SSL_CTX_use_certificate_chain_file(cContext, file) == 1 else {
                 throw TLSError.setCertificateFile(error)
             }
             try loadSignature(signature)
         case .files(let certFile, let keyFile, let signature):
-            throw "not implemented"
-//            guard tls_config_set_cert_file(cConfig, certFile) == Result.OK else {
-//                throw TLSError.setCertificateFile(context.error)
-//            }
-//            guard tls_config_set_key_file(cConfig, keyFile) == Result.OK else {
-//                throw TLSError.setKeyFile(context.error)
-//            }
-//            try loadSignature(signature)
+            guard SSL_CTX_use_certificate_file(cContext, certFile, SSL_FILETYPE_PEM) == 1 else {
+                throw TLSError.setCertificateFile(error)
+            }
+            guard SSL_CTX_use_PrivateKey_file(cContext, keyFile, SSL_FILETYPE_PEM) == 1 else {
+                throw TLSError.setKeyFile(error)
+            }
+            guard SSL_CTX_check_private_key(cContext) == 1 else {
+                throw TLSError.setKeyFile(error)
+            }
+            try loadSignature(signature)
         case .certificateAuthority(let signature):
             try loadSignature(signature)
         case .bytes(var cert, var key, let signature):
