@@ -1,5 +1,5 @@
 import CLibreSSL
-import SocksCore
+import Socks
 
 /**
  An SSL Socket.
