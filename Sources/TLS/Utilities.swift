@@ -1,7 +1,7 @@
 import Foundation
 
 struct Result {
-    static let OK = 0.int32
+    static let OK = 1.int32
 }
 
 extension Int {
@@ -9,3 +9,5 @@ extension Int {
         return Int32(self)
     }
 }
+
+extension String: Error { }

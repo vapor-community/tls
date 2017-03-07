@@ -1,33 +1,22 @@
-import CLibreSSL
-import SocksCore
+import CTLS
 
-/**
- An SSL Socket.
- */
+/// An SSL Socket.
 public final class Socket {
     public let socket: TCPInternetSocket
-    public let config: Config
-    
-    /**
-     Creates a Socket from an SSL context and an
-     unsecured socket's file descriptor.
-     
-     - parameter context: Re-usable SSL.Context in either Client or Server mode
-     - parameter descriptor: The file descriptor from an unsecure socket already created.
-     */
-    public init(config: Config, socket: TCPInternetSocket) throws {
-        self.config = config
+    public let context: Context
+    public var cSSL: CSSL?
+
+    /// Creates a Socket from an SSL context and an
+    /// unsecured socket's file descriptor.
+    ///
+    /// - parameter context: Re-usable SSL.Context in either Client or Server mode
+    /// - parameter descriptor: The file descriptor from an unsecure socket already created.
+    public init(_ context: Context, _ socket: TCPInternetSocket) throws {
+        self.context = context
         self.socket = socket
     }
     
-    public var currSocket: TCPInternetSocket?
-    public var currContext: OpaquePointer?
-    public var lastError:String? {
-        guard let context = currContext, let reason = tls_error(context) else {
-            return nil
-        }
-        return String(validatingUTF8: reason)
-    }
+    // public var currSocket: TCPInternetSocket?
     
     public convenience init(
         mode: Mode,
@@ -36,139 +25,141 @@ public final class Socket {
         certificates: Certificates = .defaults,
         verifyHost: Bool = true,
         verifyCertificates: Bool = true,
-        cipher: Config.Cipher = .compat,
-        proto: [Config.TLSProtocol] = [.all]
-        ) throws {
-        let context = try Context(mode: mode)
-        let config = try Config(
-            context: context,
-            certificates: certificates,
+        cipherSuite: String? = nil
+    ) throws {
+        let context = try Context(
+            mode,
+            certificates,
             verifyHost: verifyHost,
             verifyCertificates: verifyCertificates,
-            cipher: cipher,
-            proto: proto
+            cipherSuite: cipherSuite
         )
         
         let address = InternetAddress(hostname: hostname, port: port)
         let socket = try TCPInternetSocket(address: address)
         
-        try self.init(config: config, socket: socket)
+        try self.init(context, socket)
     }
     
     
-    /**
-     Connects to an SSL server from this client.
-     
-     This should only be called if the Context's mode is `.client`
-     */
+    /// Connects to an SSL server from this client.
+    ///
+    /// This should only be called if the Context's mode is `.client`
     public func connect(servername: String) throws {
         try socket.connect()
-        let connectResult = tls_connect_socket(
-            config.context.cContext,
-            socket.descriptor,
-            servername
-        )
-        currSocket = socket
-        currContext = config.context.cContext
+
+        let ssl = SSL_new(context.cContext)
+        SSL_set_fd(ssl, socket.descriptor)
+//        let connectResult = tls_connect_socket(
+//            config.context.cContext,
+//            socket.descriptor,
+//            servername
+//        )
+
+        let connectResult = SSL_connect(ssl)
+
+        //currSocket = socket
+        cSSL = ssl
         
-        guard connectResult == Result.OK else {
-            throw TLSError.connect(lastError ?? "Unknown")
+        guard connectResult == 1 else {
+            throw TLSError.connect(context.error)
         }
-        
+
+        guard let cert = SSL_get_peer_certificate(ssl) else {
+            throw "No certificates"
+        }
+
+
+        let subject = X509_NAME_oneline(X509_get_subject_name(cert), nil, 0)
+        let issuer = X509_NAME_oneline(X509_get_issuer_name(cert), nil, 0)
+
+        print(subject)
+        print(issuer)
+
+        free(subject)
+        free(issuer)
+        X509_free(cert)
+
         // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
-        guard tls_handshake(config.context.cContext) == Result.OK else {
-            throw TLSError.handshake(lastError ?? "Unknown")
+        guard SSL_do_handshake(ssl) == Result.OK else {
+            throw TLSError.handshake(context.error)
         }
     }
     
-    /**
-     Accepts a connection to this SSL server from a client.
-     
-     This should only be called if the Context's mode is `.server`
-     */
+    /// Accepts a connection to this SSL server from a client.
+    ///
+    /// This should only be called if the Context's mode is `.server`
     public func accept() throws {
         let new = try socket.accept()
-        let result = tls_accept_socket(
-            config.context.cContext,
-            &currContext,
-            new.descriptor
-        )
-        currSocket = new
+        print(new.descriptor)
+        let ssl = SSL_new(context.cContext)
+        SSL_set_fd(ssl, new.descriptor)
+
+        // currSocket = new
+        cSSL = ssl
+
+        let result = SSL_accept(ssl)
+        print(result)
         
-        guard result == Result.OK else {
+        guard result == 1 else {
             try new.close()
-            throw TLSError.accept(config.context.error)
+            throw TLSError.accept(context.error)
         }
         
         // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
-        guard tls_handshake(currContext) == Result.OK else {
+        guard SSL_do_handshake(ssl) == 1 else {
             try new.close()
-            throw TLSError.handshake(lastError ?? "Unknown")
+            throw TLSError.handshake(context.error)
         }
+        print("handshake done")
     }
     
-    /**
-     Receives bytes from the secure socket.
-     
-     - parameter max: The maximum amount of bytes to receive.
-     */
+    /// Receives bytes from the secure socket.
+    ///
+    /// - parameter max: The maximum amount of bytes to receive.
     public func receive(max: Int) throws -> [UInt8]  {
-        guard let context = currContext else {
-            throw TLSError.receive("Context is nil")
-        }
-        
         let pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: max)
         defer {
             pointer.deallocate(capacity: max)
         }
         
-        let result = tls_read(context, pointer, max)
+        let result = SSL_read(cSSL, pointer, Int32(max))
         let bytesRead = Int(result)
         
         guard bytesRead >= 0 else {
-            throw TLSError.receive(lastError ?? "Unknown")
+            throw TLSError.receive(context.error)
         }
         
         let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: bytesRead)
         return Array(buffer)
     }
     
-    /**
-     Sends bytes to the secure socket.
-     
-     - parameter bytes: An array of bytes to send.
-     */
-    public func send(_ bytes: [UInt8]) throws {
-        guard let context = currContext else {
-            throw TLSError.send("Context is nil")
-        }
-        
-        var totalBytesSent = 0
-        let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
-        guard let bufferBaseAddress = buffer.baseAddress else {
-            throw TLSError.send("Failed to get buffer base address")
-        }
-        
-        while totalBytesSent < bytes.count {
-            let bytesSent = tls_write(context, bufferBaseAddress.advanced(by: totalBytesSent), bytes.count - totalBytesSent)
-            if bytesSent <= 0 {
-                throw TLSError.send(lastError ?? "Unknown")
-            }
-            totalBytesSent += bytesSent
+    /// Sends bytes to the secure socket.
+    ///
+    /// - parameter bytes: An array of bytes to send.
+    public func send(_ bytes: Bytes) throws {
+        print("TLS send")
+        var bytes = bytes
+        print("TLS enter while")
+        print("here")
+        let bytesSent = SSL_write(
+            cSSL,
+            &bytes,
+            Int32(bytes.count)
+        )
+        print("there")
+        print(bytesSent)
+
+        if bytesSent <= 0 {
+            let res = SSL_get_error(cSSL, bytesSent)
+            print(res)
+            throw TLSError.send(context.error)
         }
     }
     
-    /**
-     Sends a shutdown to secure socket
-     */
+    ///Sends a shutdown to secure socket
     public func close() throws {
-        var result = Result.OK
-        if let context = currContext {
-            result = tls_close(context)
-        }
-        try currSocket?.close()
-        guard result == Result.OK else {
-            throw TLSError.close(lastError ?? "Unknown")
-        }
+        SSL_free(cSSL)
+        // try currSocket?.close()
     }
 }
