@@ -129,7 +129,7 @@ class LiveTests: XCTestCase {
         let received = try socket.receive(max: 65_536).toString()
         try socket.close()
         
-        XCTAssert(received.contains("40002"))
+        XCTAssert(received.contains("200 OK"))
     }
 
     func testGoogleMapsApi() throws {
