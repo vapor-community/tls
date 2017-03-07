@@ -49,7 +49,11 @@ public final class Context {
         }
 
         guard let ctx = SSL_CTX_new(method) else {
-            throw TLSError.createContext
+            throw TLSError(
+                functionName: "SSL_CTX_new",
+                returnCode: nil,
+                reason: "Unable to create new context"
+            )
         }
 
         SSL_CTX_ctrl(ctx, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
@@ -75,32 +79,16 @@ public final class Context {
         self.verifyHost = verifyHost
         self.verifyCertificates = verifyCertificates
 
-        guard SSL_CTX_set_cipher_list(
-            ctx,
-            cipherSuite
-                ?? "DEFAULT"
-            ) == 1 else {
-                throw TLSError.setCipher(error)
-        }
+        try assert(
+            SSL_CTX_set_cipher_list(ctx, cipherSuite ?? "DEFAULT"),
+            functionName: "SSL_CTX_set_cipher_list"
+        )
 
         try loadCertificates(certificates)
     }
 
     deinit {
         SSL_CTX_free(cContext)
-    }
-
-    public var error: String {
-        let err = ERR_get_error()
-        if err == 0 {
-            return "Unknown"
-        }
-
-        if let errorStr = ERR_reason_error_string(err) {
-            return String(validatingUTF8: errorStr) ?? "Unknown"
-        } else {
-            return "Unknown"
-        }
     }
 }
 
@@ -112,13 +100,15 @@ extension Context {
     internal func loadSignature(_ signature: Certificates.Signature) throws {
         switch signature {
         case .signedDirectory(caCertificateDirectory: let dir):
-            guard SSL_CTX_load_verify_locations(cContext, nil, dir) == 1 else {
-                throw TLSError.setCAPath(path: dir, error)
-            }
+            try assert(
+                SSL_CTX_load_verify_locations(cContext, nil, dir),
+                functionName: "SSL_CTX_load_verify_locations"
+            )
         case .signedFile(caCertificateFile: let file):
-            guard SSL_CTX_load_verify_locations(cContext, file, nil) == 1 else {
-                throw TLSError.setCAFile(file: file, error)
-            }
+            try assert(
+                SSL_CTX_load_verify_locations(cContext, file, nil),
+                functionName: "SSL_CTX_load_verify_locations"
+            )
         case .selfSigned:
             break
         }
@@ -127,35 +117,68 @@ extension Context {
     internal func loadCertificates(_ certificates: Certificates) throws {
         switch certificates {
         case .chain(let file, let signature):
-            guard SSL_CTX_use_certificate_chain_file(cContext, file) == 1 else {
-                throw TLSError.setCertificateFile(error)
-            }
+            try assert(
+                SSL_CTX_use_certificate_chain_file(cContext, file),
+                functionName: "SSL_CTX_use_certificate_chain_file"
+            )
+
             try loadSignature(signature)
         case .files(let certFile, let keyFile, let signature):
-            guard SSL_CTX_use_certificate_file(cContext, certFile, SSL_FILETYPE_PEM) == 1 else {
-                throw TLSError.setCertificateFile(error)
-            }
-            guard SSL_CTX_use_PrivateKey_file(cContext, keyFile, SSL_FILETYPE_PEM) == 1 else {
-                throw TLSError.setKeyFile(error)
-            }
-            guard SSL_CTX_check_private_key(cContext) == 1 else {
-                throw TLSError.setKeyFile(error)
-            }
+            try assert(
+                SSL_CTX_use_certificate_file(cContext, certFile, SSL_FILETYPE_PEM),
+                functionName: "SSL_CTX_use_certificate_file"
+            )
+
+            try assert(
+                SSL_CTX_use_PrivateKey_file(cContext, keyFile, SSL_FILETYPE_PEM),
+                functionName: "SSL_CTX_use_PrivateKey_file"
+            )
+
+            try assert(
+               SSL_CTX_check_private_key(cContext),
+                functionName: "SSL_CTX_check_private_key"
+            )
+
             try loadSignature(signature)
         case .certificateAuthority(let signature):
             try loadSignature(signature)
         case .bytes(var cert, var key, let signature):
-            let certBio = BIO_new_mem_buf(&cert, Int32(cert.count))
-            let cert = PEM_read_bio_X509(certBio, nil, nil, nil)
-            guard SSL_CTX_use_certificate(cContext, cert) == 1 else {
-                throw TLSError.setCertificateBytes(error)
+            // cert
+            guard let certBio = BIO_new_mem_buf(&cert, Int32(cert.count)) else {
+                throw makeError(
+                    functionName: "BIO_new_mem_buf",
+                    returnCode: nil
+                )
             }
+            guard let cert = PEM_read_bio_X509(certBio, nil, nil, nil) else {
+                throw makeError(
+                    functionName: "PEM_read_bio_X509",
+                    returnCode: nil
+                )
+            }
+            try assert(
+                SSL_CTX_use_certificate(cContext, cert),
+                functionName: "SSL_CTX_use_certificate"
+            )
 
-            let keyBio = BIO_new_mem_buf(&key, Int32(key.count))
-            let key = PEM_read_bio_PrivateKey(keyBio, nil, nil, nil)
-            guard SSL_CTX_use_PrivateKey(cContext, key) == 1 else {
-                throw TLSError.setKeyBytes(error)
+            // key
+            guard let keyBio = BIO_new_mem_buf(&key, Int32(key.count)) else {
+                throw makeError(
+                    functionName: "BIO_new_mem_buf",
+                    returnCode: nil
+                )
             }
+            guard let key = PEM_read_bio_PrivateKey(keyBio, nil, nil, nil) else {
+                throw makeError(
+                    functionName: "PEM_read_bio_PrivateKey",
+                    returnCode: nil
+                )
+            }
+            try assert(
+                SSL_CTX_use_PrivateKey(cContext, key),
+                functionName: "SSL_CTX_use_PrivateKey"
+            )
+
             try loadSignature(signature)
         case .none:
             break

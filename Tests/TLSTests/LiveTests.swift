@@ -59,10 +59,13 @@ class LiveTests: XCTestCase {
             try socket.send("GET / HTTP/1.1\r\n\r\n".toBytes())
 
             XCTFail("Should not have sent.")
-        } catch TLSError.connect(_) {
-            // pass
-        } catch {
-            XCTFail("Wrong error: \(error).")
+        } catch let error as TLSError {
+            print(error)
+            if error.functionName == "SSL_connect" && error.reason == "certificate verify failed" {
+                // pass
+            } else {
+                XCTFail("Wrong error: \(error)")
+            }
         }
     }
 

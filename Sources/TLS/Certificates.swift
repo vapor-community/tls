@@ -1,6 +1,8 @@
 import Core
 import libc
 
+/// Certificates and signatures used
+/// for securing TLS connections
 public enum Certificates {
     public enum Signature {
         case selfSigned

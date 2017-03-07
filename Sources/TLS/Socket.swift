@@ -6,6 +6,8 @@ public final class Socket {
     public let socket: TCPInternetSocket
     public let context: Context
     public var cSSL: CSSL?
+
+    // keep from deallocating
     public var currentSocket: TCPInternetSocket?
 
     /// Creates a Socket from an SSL context and an
@@ -17,8 +19,6 @@ public final class Socket {
         self.context = context
         self.socket = socket
     }
-    
-    // public var currSocket: TCPInternetSocket?
     
     public convenience init(
         mode: Mode,
@@ -50,9 +50,15 @@ public final class Socket {
     public func connect(servername: String) throws {
         try socket.connect()
 
-        let ssl = SSL_new(context.cContext)
-        SSL_set_fd(ssl, socket.descriptor)
+        guard let ssl = SSL_new(context.cContext) else {
+            throw makeError(functionName: "SSL_new")
+        }
         cSSL = ssl
+
+        try assert(
+            SSL_set_fd(ssl, socket.descriptor),
+            functionName: "SSL_set_fd"
+        )
 
         if context.verifyHost {
             let param = SSL_get0_param(ssl)
@@ -63,14 +69,16 @@ public final class Socket {
             X509_VERIFY_PARAM_set1_host(param, servername, 0);
             SSL_set_verify(ssl, SSL_VERIFY_PEER, nil)
         }
-        
-        guard SSL_connect(ssl) == 1 else {
-            throw TLSError.connect(context.error)
-        }
 
-        guard SSL_do_handshake(ssl) == 1 else {
-            throw TLSError.handshake(context.error)
-        }
+        try assert(
+            SSL_connect(ssl),
+            functionName: "SSL_connect"
+        )
+
+        try assert(
+            SSL_do_handshake(ssl),
+            functionName: "SSL_do_handshake"
+        )
     }
     
     /// Accepts a connection to this SSL server from a client.
@@ -79,34 +87,35 @@ public final class Socket {
     public func accept() throws {
         let client = try socket.accept()
 
-        let ssl = SSL_new(context.cContext)
-        SSL_set_fd(ssl, client.descriptor)
-        currentSocket = client
+        guard let ssl = SSL_new(context.cContext) else {
+            throw makeError(functionName: "SSL_new")
+        }
         cSSL = ssl
 
-        let result = SSL_accept(ssl)
-        print(result)
-        
-        guard result == 1 else {
-            try client.close()
-            throw TLSError.accept(context.error)
-        }
+        try assert(
+            SSL_set_fd(ssl, client.descriptor),
+            functionName: "SSL_set_fd"
+        )
+        // keep from deallocating
+        currentSocket = client
 
-        print("before handshake")
-        
-        // handshake is performed automatically when using tls_read or tls_write, but by doing it here, handshake errors can be properly reported
-        guard SSL_do_handshake(ssl) == 1 else {
-            try client.close()
-            throw TLSError.handshake(context.error)
-        }
-        print("handshake done")
+        try assert(
+            SSL_accept(ssl),
+            functionName: "SSL_accept"
+        )
+
+        try assert(
+            SSL_do_handshake(ssl),
+            functionName: "SSL_do_handshake"
+        )
     }
     
     /// Receives bytes from the secure socket.
     ///
     /// - parameter max: The maximum amount of bytes to receive.
-    public func receive(max: Int) throws -> [UInt8]  {
-        let pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: max)
+    public func receive(max: Int) throws -> Bytes  {
+        let pointer = UnsafeMutablePointer<Byte>
+            .allocate(capacity: max)
         defer {
             pointer.deallocate(capacity: max)
         }
@@ -114,11 +123,10 @@ public final class Socket {
         let bytesRead = SSL_read(cSSL, pointer, Int32(max))
         
         if bytesRead <= 0 {
-            print(bytesRead)
-            let res = SSL_get_error(cSSL, bytesRead)
-            print(res)
-            print(String(validatingUTF8: strerror(errno))!)
-            throw TLSError.receive(context.error)
+            throw makeError(
+                functionName: "SSL_read",
+                returnCode: bytesRead
+            )
         }
         
         let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: Int(bytesRead))
@@ -130,9 +138,13 @@ public final class Socket {
     /// - parameter bytes: An array of bytes to send.
     public func send(_ bytes: Bytes) throws {
         var totalBytesSent = 0
-        let buffer = UnsafeBufferPointer<UInt8>(start: bytes, count: bytes.count)
+        let buffer = UnsafeBufferPointer<Byte>(start: bytes, count: bytes.count)
         guard let bufferBaseAddress = buffer.baseAddress else {
-            throw TLSError.send("Failed to get buffer base address")
+            throw TLSError(
+                functionName: "baseAddress",
+                returnCode: nil,
+                reason: "Could not fetch buffer base address"
+            )
         }
 
         while totalBytesSent < bytes.count {
@@ -142,16 +154,22 @@ public final class Socket {
                 Int32(bytes.count - totalBytesSent)
             )
             if bytesSent <= 0 {
-                throw TLSError.send(context.error)
+                throw makeError(
+                    functionName: "SSL_write",
+                    returnCode: bytesSent
+                )
             }
 
             totalBytesSent += Int(bytesSent)
         }
     }
+
+    deinit {
+        SSL_free(cSSL)
+    }
     
     ///Sends a shutdown to secure socket
     public func close() throws {
-        SSL_free(cSSL)
         try currentSocket?.close()
     }
 }
