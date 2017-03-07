@@ -1,5 +1,5 @@
 import XCTest
-import SocksCore
+import Socks
 @testable import TLS
 import Foundation
 import Core
@@ -124,12 +124,11 @@ class LiveTests: XCTestCase {
         )
         
         try socket.connect(servername: "api.weixin.qq.com")
-        try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".toBytes())
+        try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".makeBytes())
         
-        let received = try socket.receive(max: 65_536).toString()
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
-        
-        XCTAssert(received.contains("40002"))
+        XCTAssert(received.contains("200 OK"))
     }
 
     func testGoogleMapsApi() throws {
@@ -256,7 +255,7 @@ class LiveTests: XCTestCase {
         let timeoutInSeconds:Double = 10
         let result = group.wait(timeout: DispatchTime.init(secondsFromNow: timeoutInSeconds))
         guard result == DispatchTimeoutResult.success else {
-            XCTFail("Test timed out after \(timeoutInSeconds) seconds. Server error: \(serverError).  Client error: \(clientError)")
+            XCTFail("Test timed out after \(timeoutInSeconds) seconds. Server error: \(String(describing: serverError)).  Client error: \(String(describing: clientError))")
             return
         }
         if let error = serverError {
