@@ -105,9 +105,9 @@ class LiveTests: XCTestCase {
         )
         
         try socket.connect(servername: "api.weixin.qq.com")
-        try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".toBytes())
+        try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".makeBytes())
         
-        let received = try socket.receive(max: 65_536).toString()
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
 
         XCTAssert(received.contains("200 OK"))

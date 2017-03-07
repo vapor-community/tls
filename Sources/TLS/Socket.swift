@@ -1,4 +1,5 @@
 import CTLS
+import Socks
 
 /// An SSL Socket.
 public final class Socket {
