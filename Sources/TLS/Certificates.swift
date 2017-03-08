@@ -57,8 +57,6 @@ extension Certificates {
             .map { String($0) }
             .joined(separator: "/")
 
-        print(root + "/Certs/openbsd_certs.pem")
-
         return .certificateAuthority(
             signature: .signedFile(
                 caCertificateFile: root + "/Certs/openbsd_certs.pem"

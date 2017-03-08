@@ -8,7 +8,7 @@ public final class Socket {
     public var cSSL: CSSL?
 
     // keep from deallocating
-    public var currentSocket: TCPInternetSocket?
+    public var client: TCPInternetSocket?
 
     /// Creates a Socket from an SSL context and an
     /// unsecured socket's file descriptor.
@@ -97,7 +97,7 @@ public final class Socket {
             functionName: "SSL_set_fd"
         )
         // keep from deallocating
-        currentSocket = client
+        self.client = client
 
         try assert(
             SSL_accept(ssl),
@@ -170,6 +170,6 @@ public final class Socket {
     
     ///Sends a shutdown to secure socket
     public func close() throws {
-        try currentSocket?.close()
+        try client?.close()
     }
 }

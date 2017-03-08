@@ -27,8 +27,6 @@ class LiveTests: XCTestCase {
         let received = try socket.receive(max: 65_536).toString()
         try socket.close()
 
-        print(received)
-
         XCTAssert(received.contains("<!DOCTYPE html>"))
     }
     
@@ -60,7 +58,6 @@ class LiveTests: XCTestCase {
 
             XCTFail("Should not have sent.")
         } catch let error as TLSError {
-            print(error)
             if error.functionName == "SSL_connect" && error.reason == "certificate verify failed" {
                 // pass
             } else {
@@ -176,7 +173,7 @@ class LiveTests: XCTestCase {
         try server.socket.listen()
         
         let assignedAddress = try server.socket.localAddress()
-        print("Listening on \(assignedAddress.description)")
+        // Listening on \(assignedAddress.description)
         
         let group = DispatchGroup()
         group.enter()
