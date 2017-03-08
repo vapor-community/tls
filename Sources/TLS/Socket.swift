@@ -130,7 +130,10 @@ public final class Socket {
             )
         }
         
-        let buffer = UnsafeBufferPointer<UInt8>.init(start: pointer, count: Int(bytesRead))
+        let buffer = UnsafeBufferPointer<Byte>.init(
+            start: pointer,
+            count: Int(bytesRead)
+        )
         return Array(buffer)
     }
     

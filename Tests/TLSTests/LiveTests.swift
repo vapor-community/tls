@@ -174,7 +174,6 @@ class LiveTests: XCTestCase {
         try server.socket.listen()
         
         let assignedAddress = try server.socket.localAddress()
-        // Listening on \(assignedAddress.description)
         
         let group = DispatchGroup()
         group.enter()
