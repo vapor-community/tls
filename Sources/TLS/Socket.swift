@@ -61,13 +61,14 @@ public final class Socket {
         )
 
         if context.verifyHost {
-            let param = SSL_get0_param(ssl)
-            X509_VERIFY_PARAM_set_hostflags(
-                param,
-                UInt32(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS)
-            )
-            X509_VERIFY_PARAM_set1_host(param, servername, 0);
-            SSL_set_verify(ssl, SSL_VERIFY_PEER, nil)
+            print("Warning: Host verification not implemented.")
+//            let param = SSL_get0_param(ssl)
+//            X509_VERIFY_PARAM_set_hostflags(
+//                param,
+//                UInt32(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS)
+//            )
+//            X509_VERIFY_PARAM_set1_host(param, servername, 0);
+//            SSL_set_verify(ssl, SSL_VERIFY_PEER, nil)
         }
 
         try assert(
