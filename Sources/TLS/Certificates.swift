@@ -1,12 +1,13 @@
 import Core
 import libc
 
+/// Certificates and signatures used
+/// for securing TLS connections
 public enum Certificates {
     public enum Signature {
         case selfSigned
         case signedFile(caCertificateFile: String)
         case signedDirectory(caCertificateDirectory: String)
-        case signedBytes(caCertificateBytes: Bytes)
 
         public var isSelfSigned: Bool {
             switch self {
@@ -45,23 +46,6 @@ public enum Certificates {
         } else {
             return openbsd
         }
-    }
-}
-
-extension Certificates {
-    @available(*, deprecated: 1.0, message: "Use `.openbsd` instead.")
-    public static var mozilla: Certificates {
-        let root = #file.characters
-            .split(separator: "/", omittingEmptySubsequences: false)
-            .dropLast(3)
-            .map { String($0) }
-            .joined(separator: "/")
-
-        return .certificateAuthority(
-            signature: .signedFile(
-                caCertificateFile: root + "/Certs/mozilla_certs.pem"
-            )
-        )
     }
 }
 
