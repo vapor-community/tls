@@ -23,8 +23,8 @@ class LiveTests: XCTestCase {
         )
         try socket.connect(servername: "httpbin.org")
 
-        try socket.send("GET / HTTP/1.0\r\n\r\n".toBytes())
-        let received = try socket.receive(max: 65_536).toString()
+        try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
 
         XCTAssert(received.contains("<!DOCTYPE html>"))
@@ -38,8 +38,8 @@ class LiveTests: XCTestCase {
 
         try socket.connect(servername: "httpbin.org")
 
-        try socket.send("GET / HTTP/1.0\r\n\r\n".toBytes())
-        let received = try socket.receive(max: 65_536).toString()
+        try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
 
         XCTAssert(received.contains("httpbin(1): HTTP Client Testing Service"))
@@ -54,7 +54,7 @@ class LiveTests: XCTestCase {
 
         do {
             try socket.connect(servername: "swift.org")
-            try socket.send("GET / HTTP/1.1\r\n\r\n".toBytes())
+            try socket.send("GET / HTTP/1.1\r\n\r\n".makeBytes())
 
             print("Warning: not checking for invalid host name")
             // XCTFail("Should not have sent.")
@@ -76,9 +76,9 @@ class LiveTests: XCTestCase {
         )
 
         try socket.connect(servername: "nothttpbin.org")
-        try socket.send("GET / HTTP/1.0\r\n\r\n".toBytes())
+        try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
 
-        let received = try socket.receive(max: 65_536).toString()
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
 
         XCTAssert(received.contains("<!DOCTYPE html>"))
@@ -91,9 +91,9 @@ class LiveTests: XCTestCase {
         )
 
         try socket.connect(servername: "slack.com")
-        try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
+        try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
 
-        let received = try socket.receive(max: 65_536).toString()
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
 
         XCTAssert(received.contains("invalid_auth"))
@@ -121,9 +121,9 @@ class LiveTests: XCTestCase {
         )
         
         try socket.connect(servername: "maps.googleapis.com")
-        try socket.send("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".toBytes())
+        try socket.send("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
         
-        let received = try socket.receive(max: 65_536).toString()
+        let received = try socket.receive(max: 65_536).string
         try socket.close()
         
         XCTAssert(received.contains("REQUEST_DENIED"))
@@ -133,14 +133,14 @@ class LiveTests: XCTestCase {
         do {
             let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com")
             try stream.connect(servername: "connect.icepay.com")
-            try stream.send("GET /plaintext HTTP/1.1".toBytes())
-            try stream.send("\r\n".toBytes())
-            try stream.send("Accept: */*".toBytes())
-            try stream.send("\r\n".toBytes())
-            try stream.send("Host: connect.icepay.com".toBytes())
-            try stream.send("\r\n\r\n".toBytes()) // double line terminator
+            try stream.send("GET /plaintext HTTP/1.1".makeBytes())
+            try stream.send("\r\n".makeBytes())
+            try stream.send("Accept: */*".makeBytes())
+            try stream.send("\r\n".makeBytes())
+            try stream.send("Host: connect.icepay.com".makeBytes())
+            try stream.send("\r\n\r\n".makeBytes()) // double line terminator
 
-            let result = try stream.receive(max: 2048).toString()
+            let result = try stream.receive(max: 2048).string
             XCTAssert(result.contains("404"))
         } catch {
             XCTFail("SSL Connection Failed: \(error)")
