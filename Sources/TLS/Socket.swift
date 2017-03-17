@@ -1,6 +1,6 @@
 import CTLS
 
-public protocol Socket: DuplexStream, ProgramStream {
+public protocol Socket: DuplexStream, InternetStream {
     var socket: TCPInternetSocket { get }
     var context: Context { get }
     var cSSL: CSSL? { get set }
