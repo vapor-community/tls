@@ -9,13 +9,19 @@ public final class Socket: DuplexProgramStream {
     // keep from deallocating
     public var client: TCPInternetSocket?
 
+    // program
+    public let scheme: String
+    public var hostname: String {
+        return socket.hostname
+    }
+    public var port: Port {
+        return socket.port
+    }
+
+    // stream
     public var isClosed: Bool {
         return socket.isClosed
     }
-
-    public let hostname: String
-    public let port: UInt16
-    public let securityLayer: SecurityLayer
 
     /// Creates a Socket from an SSL context and an
     /// unsecured socket's file descriptor.
@@ -25,26 +31,16 @@ public final class Socket: DuplexProgramStream {
     public init(
         _ context: Context,
         _ socket: TCPInternetSocket,
-        hostname: String,
-        port: UInt16
+        scheme: String
     ) throws {
         self.context = context
         self.socket = socket
-        self.hostname = hostname
-        self.port = port
-        self.securityLayer = SecurityLayer(scheme: "https")
-    }
-
-    public convenience init(
-        hostname: String,
-        port: UInt16,
-        _ securityLayer: SecurityLayer
-    ) throws {
-        try self.init(.client, hostname: hostname, port: port)
+        self.scheme = scheme
     }
     
     public convenience init(
         _ mode: Mode,
+        scheme: String,
         hostname: String,
         port: UInt16 = 443,
         certificates: Certificates = .defaults,
@@ -62,12 +58,11 @@ public final class Socket: DuplexProgramStream {
 
         let address = InternetAddress(hostname: hostname, port: port)
         let socket = try TCPInternetSocket(address)
-        
+
         try self.init(
             context,
             socket,
-            hostname: hostname,
-            port: port
+            scheme: scheme
         )
     }
 

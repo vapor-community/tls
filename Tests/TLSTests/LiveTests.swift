@@ -18,6 +18,7 @@ class LiveTests: XCTestCase {
     func testNoVerify() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "httpbin.org",
             verifyCertificates: false
         )
@@ -34,6 +35,7 @@ class LiveTests: XCTestCase {
     func testWithCACerts() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "httpbin.org"
         )
 
@@ -49,6 +51,7 @@ class LiveTests: XCTestCase {
     func testInvalidHostname() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "httpbin.org",
             verifyCertificates: false
         )
@@ -71,6 +74,7 @@ class LiveTests: XCTestCase {
     func testInvalidHostnameNoVerify() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "httpbin.org",
             verifyHost: false,
             verifyCertificates: false
@@ -88,6 +92,7 @@ class LiveTests: XCTestCase {
     func testSlack() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "slack.com"
         )
 
@@ -103,6 +108,7 @@ class LiveTests: XCTestCase {
     func testWeixingApi() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "api.weixin.qq.com"
         )
         
@@ -118,6 +124,7 @@ class LiveTests: XCTestCase {
     func testGoogleMapsApi() throws {
         let socket = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: "maps.googleapis.com"
         )
         
@@ -132,7 +139,11 @@ class LiveTests: XCTestCase {
 
     func testConnectIcePay() throws {
         do {
-            let stream = try TLS.Socket(.client, hostname: "connect.icepay.com")
+            let stream = try TLS.Socket(
+                .client,
+                scheme: "https",
+                hostname: "connect.icepay.com"
+            )
             try stream.connect(servername: "connect.icepay.com")
             try stream.send("GET /plaintext HTTP/1.1".makeBytes())
             try stream.send("\r\n".makeBytes())
@@ -160,6 +171,7 @@ class LiveTests: XCTestCase {
         
         let server = try TLS.Socket(
             .server,
+            scheme: "https",
             hostname: hostname,
             port: 0, // makes the socket bind to any available port
             certificates: .bytes(
@@ -201,6 +213,7 @@ class LiveTests: XCTestCase {
         
         let client = try TLS.Socket(
             .client,
+            scheme: "https",
             hostname: hostname,
             port: assignedAddress.port,
             verifyHost: false,
