@@ -1,2 +1,2 @@
 @_exported import Core
-@_exported import Socks
+@_exported import Sockets
