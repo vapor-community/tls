@@ -1,5 +1,5 @@
 import XCTest
-import Socks
+import Sockets
 @testable import TLS
 import Foundation
 import Core
@@ -17,29 +17,30 @@ class LiveTests: XCTestCase {
 
     func testNoVerify() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "httpbin.org",
             verifyCertificates: false
         )
         try socket.connect(servername: "httpbin.org")
 
         try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
 
+        print(received)
         XCTAssert(received.contains("<!DOCTYPE html>"))
     }
     
     func testWithCACerts() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "httpbin.org"
         )
 
         try socket.connect(servername: "httpbin.org")
 
         try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
 
         XCTAssert(received.contains("httpbin(1): HTTP Client Testing Service"))
@@ -47,7 +48,7 @@ class LiveTests: XCTestCase {
 
     func testInvalidHostname() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "httpbin.org",
             verifyCertificates: false
         )
@@ -69,7 +70,7 @@ class LiveTests: XCTestCase {
 
     func testInvalidHostnameNoVerify() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "httpbin.org",
             verifyHost: false,
             verifyCertificates: false
@@ -78,7 +79,7 @@ class LiveTests: XCTestCase {
         try socket.connect(servername: "nothttpbin.org")
         try socket.send("GET / HTTP/1.0\r\n\r\n".makeBytes())
 
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
 
         XCTAssert(received.contains("<!DOCTYPE html>"))
@@ -86,14 +87,14 @@ class LiveTests: XCTestCase {
 
     func testSlack() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "slack.com"
         )
 
         try socket.connect(servername: "slack.com")
         try socket.send("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
 
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
 
         XCTAssert(received.contains("invalid_auth"))
@@ -101,14 +102,14 @@ class LiveTests: XCTestCase {
     
     func testWeixingApi() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "api.weixin.qq.com"
         )
         
         try socket.connect(servername: "api.weixin.qq.com")
         try socket.send("GET /cgi-bin/token HTTP/1.0\r\n\r\n".makeBytes())
         
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
 
         XCTAssert(received.contains("200 OK"))
@@ -116,14 +117,14 @@ class LiveTests: XCTestCase {
 
     func testGoogleMapsApi() throws {
         let socket = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: "maps.googleapis.com"
         )
         
         try socket.connect(servername: "maps.googleapis.com")
         try socket.send("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
         
-        let received = try socket.receive(max: 65_536).string
+        let received = try socket.receive(max: 65_536).makeString()
         try socket.close()
         
         XCTAssert(received.contains("REQUEST_DENIED"))
@@ -131,7 +132,7 @@ class LiveTests: XCTestCase {
 
     func testConnectIcePay() throws {
         do {
-            let stream = try TLS.Socket(mode: .client, hostname: "connect.icepay.com")
+            let stream = try TLS.Socket(.client, hostname: "connect.icepay.com")
             try stream.connect(servername: "connect.icepay.com")
             try stream.send("GET /plaintext HTTP/1.1".makeBytes())
             try stream.send("\r\n".makeBytes())
@@ -140,7 +141,7 @@ class LiveTests: XCTestCase {
             try stream.send("Host: connect.icepay.com".makeBytes())
             try stream.send("\r\n\r\n".makeBytes()) // double line terminator
 
-            let result = try stream.receive(max: 2048).string
+            let result = try stream.receive(max: 2048).makeString()
             XCTAssert(result.contains("404"))
         } catch {
             XCTFail("SSL Connection Failed: \(error)")
@@ -158,7 +159,7 @@ class LiveTests: XCTestCase {
 
         
         let server = try TLS.Socket(
-            mode: .server,
+            .server,
             hostname: hostname,
             port: 0, // makes the socket bind to any available port
             certificates: .bytes(
@@ -181,17 +182,17 @@ class LiveTests: XCTestCase {
 
         background {
             do {
-                try server.accept()
+                let client = try server.accept()
                 var receivedData:[UInt8] = []
                 while receivedData.count < testData.count {
-                    let newData = try server.receive(max: 65_536)
+                    let newData = try client.receive(max: 65_536)
                     receivedData.append(contentsOf: newData)
                 }
                 if receivedData != testData {
                     XCTFail("error")
                 }
-                try server.send(receivedData) // mirror data back
-                try server.close()
+                try client.send(receivedData) // mirror data back
+                try client.close()
             } catch {
                 XCTFail("\(error)")
             }
@@ -199,7 +200,7 @@ class LiveTests: XCTestCase {
         }
         
         let client = try TLS.Socket(
-            mode: .client,
+            .client,
             hostname: hostname,
             port: assignedAddress.port,
             verifyHost: false,

@@ -1,8 +1,7 @@
 import CTLS
-import Socks
 
 /// An SSL Socket.
-public final class Socket {
+public final class Socket: DuplexProgramStream {
     public let socket: TCPInternetSocket
     public let context: Context
     public var cSSL: CSSL?
@@ -10,18 +9,42 @@ public final class Socket {
     // keep from deallocating
     public var client: TCPInternetSocket?
 
+    public var isClosed: Bool {
+        return socket.isClosed
+    }
+
+    public let hostname: String
+    public let port: UInt16
+    public let securityLayer: SecurityLayer
+
     /// Creates a Socket from an SSL context and an
     /// unsecured socket's file descriptor.
     ///
     /// - parameter context: Re-usable SSL.Context in either Client or Server mode
     /// - parameter descriptor: The file descriptor from an unsecure socket already created.
-    public init(_ context: Context, _ socket: TCPInternetSocket) throws {
+    public init(
+        _ context: Context,
+        _ socket: TCPInternetSocket,
+        hostname: String,
+        port: UInt16
+    ) throws {
         self.context = context
         self.socket = socket
+        self.hostname = hostname
+        self.port = port
+        self.securityLayer = SecurityLayer(scheme: "https")
+    }
+
+    public convenience init(
+        hostname: String,
+        port: UInt16,
+        _ securityLayer: SecurityLayer
+    ) throws {
+        try self.init(.client, hostname: hostname, port: port)
     }
     
     public convenience init(
-        mode: Mode,
+        _ mode: Mode,
         hostname: String,
         port: UInt16 = 443,
         certificates: Certificates = .defaults,
@@ -36,13 +59,25 @@ public final class Socket {
             verifyCertificates: verifyCertificates,
             cipherSuite: cipherSuite
         )
-        
+
         let address = InternetAddress(hostname: hostname, port: port)
-        let socket = try TCPInternetSocket(address: address)
+        let socket = try TCPInternetSocket(address)
         
-        try self.init(context, socket)
+        try self.init(
+            context,
+            socket,
+            hostname: hostname,
+            port: port
+        )
     }
-    
+
+    public func setTimeout(_ timeout: Double) throws {
+        try socket.setTimeout(timeout)
+    }
+
+    public func connect() throws {
+        try connect(servername: "")
+    }
     
     /// Connects to an SSL server from this client.
     ///
@@ -56,7 +91,7 @@ public final class Socket {
         cSSL = ssl
 
         try assert(
-            SSL_set_fd(ssl, socket.descriptor),
+            SSL_set_fd(ssl, socket.descriptor.raw),
             functionName: "SSL_set_fd"
         )
 
@@ -85,7 +120,7 @@ public final class Socket {
     /// Accepts a connection to this SSL server from a client.
     ///
     /// This should only be called if the Context's mode is `.server`
-    public func accept() throws {
+    public func accept() throws -> Socket {
         let client = try socket.accept()
 
         guard let ssl = SSL_new(context.cContext) else {
@@ -94,7 +129,7 @@ public final class Socket {
         cSSL = ssl
 
         try assert(
-            SSL_set_fd(ssl, client.descriptor),
+            SSL_set_fd(ssl, client.descriptor.raw),
             functionName: "SSL_set_fd"
         )
         // keep from deallocating
@@ -109,6 +144,8 @@ public final class Socket {
             SSL_do_handshake(ssl),
             functionName: "SSL_do_handshake"
         )
+
+        return self
     }
     
     /// Receives bytes from the secure socket.
@@ -168,12 +205,17 @@ public final class Socket {
         }
     }
 
+    public func flush() throws {
+        // no flush necessary
+    }
+
     deinit {
         SSL_free(cSSL)
     }
     
     ///Sends a shutdown to secure socket
     public func close() throws {
+        try socket.close()
         try client?.close()
     }
 }
