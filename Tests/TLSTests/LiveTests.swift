@@ -16,8 +16,8 @@ class LiveTests: XCTestCase {
     ]
 
     func testNoVerify() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "swift.org",
             verifyCertificates: false
         )
@@ -30,8 +30,8 @@ class LiveTests: XCTestCase {
     }
     
     func testWithCACerts() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "swift.org"
         )
 
@@ -45,8 +45,8 @@ class LiveTests: XCTestCase {
     }
 
     func testInvalidHostname() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "swift.org",
             verifyCertificates: false
         )
@@ -67,8 +67,8 @@ class LiveTests: XCTestCase {
     }
 
     func testInvalidHostnameNoVerify() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "swift.org",
             verifyHost: false,
             verifyCertificates: false
@@ -84,8 +84,8 @@ class LiveTests: XCTestCase {
     }
 
     func testSlack() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "slack.com"
         )
 
@@ -99,8 +99,8 @@ class LiveTests: XCTestCase {
     }
     
     func testWeixingApi() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "api.weixin.qq.com"
         )
         
@@ -114,8 +114,8 @@ class LiveTests: XCTestCase {
     }
 
     func testGoogleMapsApi() throws {
-        let socket = try ClientSocket(
-            scheme: "https",
+        let socket = try InternetSocket(
+            .client,
             hostname: "maps.googleapis.com",
             port: 443
         )
@@ -131,8 +131,8 @@ class LiveTests: XCTestCase {
 
     func testConnectIcePay() throws {
         do {
-            let stream = try ClientSocket(
-                scheme: "https",
+            let stream = try InternetSocket(
+                .client,
                 hostname: "connect.icepay.com",
                 port: 443
             )
@@ -161,8 +161,8 @@ class LiveTests: XCTestCase {
         }
 
         
-        let server = try ServerSocket(
-            scheme: "https",
+        let server = try InternetSocket(
+            .server,
             hostname: hostname,
             port: 8203,
             certificates: .bytes(
@@ -200,8 +200,8 @@ class LiveTests: XCTestCase {
             group.leave()
         }
         
-        let client = try ClientSocket(
-            scheme: "https",
+        let client = try InternetSocket(
+            .client,
             hostname: hostname,
             port: 8203,
             verifyHost: false,

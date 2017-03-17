@@ -1,18 +1,9 @@
 import CTLS
 
 /// An SSL Socket.
-public final class ClientSocket: Socket, ClientStream {
-    public static let mode = Mode.client
+public protocol ClientSocket: Socket, ClientStream { }
 
-    public let socket: TCPInternetSocket
-    public let context: Context
-    public var cSSL: CSSL?
-
-    public init(_ socket: TCPInternetSocket, _ context: Context) {
-        self.socket = socket
-        self.context = context
-    }
-
+extension ClientSocket {
     /// Convenience connect w/o servername
     public func connect() throws {
         try connect(servername: nil)

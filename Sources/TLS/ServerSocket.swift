@@ -1,21 +1,12 @@
 import CTLS
 
 /// A server SSL Socket.
-public final class ServerSocket: Socket, ServerStream {
-    public static let mode = Mode.server
-
-    public let socket: TCPInternetSocket
-    public let context: Context
-    public var cSSL: CSSL?
-
-    public init(_ socket: TCPInternetSocket, _ context: Context) {
-        self.socket = socket
-        self.context = context
-    }
-
+public protocol ServerSocket: Socket, ServerStream {
     // keep from deallocating
-    public var client: TCPInternetSocket?
+    var client: TCPInternetSocket? { get set }
+}
 
+extension ServerSocket {
     /// Binds the socket to the address
     public func bind() throws {
         try socket.bind()
@@ -27,7 +18,7 @@ public final class ServerSocket: Socket, ServerStream {
     }
 
     /// Accepts a connection to this SSL server from a client
-    public func accept() throws -> ServerSocket {
+    public func accept() throws -> Self {
         let client = try socket.accept()
 
         guard let ssl = SSL_new(context.cContext) else {
@@ -51,12 +42,7 @@ public final class ServerSocket: Socket, ServerStream {
             SSL_do_handshake(ssl),
             functionName: "SSL_do_handshake"
         )
-
+        
         return self
-    }
-
-    deinit {
-        try? client?.close()
-        SSL_free(cSSL)
     }
 }
