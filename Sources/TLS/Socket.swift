@@ -60,7 +60,7 @@ extension Socket {
     /// Receives bytes from the secure socket.
     ///
     /// - parameter max: The maximum amount of bytes to receive.
-    public func receive(max: Int) throws -> Bytes  {
+    public func read(max: Int) throws -> Bytes  {
         let pointer = UnsafeMutablePointer<Byte>
             .allocate(capacity: max)
         defer {
@@ -90,7 +90,7 @@ extension Socket {
     /// Sends bytes to the secure socket.
     ///
     /// - parameter bytes: An array of bytes to send.
-    public func send(_ bytes: Bytes) throws {
+    public func write(_ bytes: Bytes) throws {
         var totalBytesSent = 0
         let buffer = UnsafeBufferPointer<Byte>(start: bytes, count: bytes.count)
         guard let bufferBaseAddress = buffer.baseAddress else {
@@ -144,8 +144,10 @@ extension Socket {
             cipherSuite: cipherSuite
         )
 
-        let address = InternetAddress(hostname: hostname, port: port)
-        let socket = try TCPInternetSocket(address)
+        let socket = try TCPInternetSocket(
+            hostname: hostname,
+            port: port
+        )
 
         self.init(
             socket,
