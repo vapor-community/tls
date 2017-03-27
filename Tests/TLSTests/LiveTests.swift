@@ -12,7 +12,10 @@ class LiveTests: XCTestCase {
         ("testInvalidHostname", testInvalidHostname),
         ("testInvalidHostnameNoVerify", testInvalidHostnameNoVerify),
         ("testSlack", testSlack),
+        ("testWeixingApi", testWeixingApi),
+        ("testGoogleMapsApi", testGoogleMapsApi),
         ("testConnectIcePay", testConnectIcePay),
+        ("testServer", testServer),
     ]
 
     func testNoVerify() throws {
