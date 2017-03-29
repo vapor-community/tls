@@ -11,7 +11,7 @@ A Swift wrapper for Transport Layer Security (TLS/SSL) using OpenSSL.
 
 ## 📖 Documentation
 
-Visit the Vapor web framework's [documentation](http://docs.vapor.codes) for instructions on how to use this package.
+Visit the Vapor web framework's [documentation](https://vapor.github.io/documentation/http/server.html#tls) for instructions on how to use this package.
 
 ## 💧 Community
 
