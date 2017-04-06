@@ -11,9 +11,13 @@ public final class InternetSocket: Socket {
         self.socket = socket
         self.context = context
     }
+    
+    public func close() throws {
+        try socket.close()
+        try client?.close()
+    }
 
     deinit {
-        try? client?.close()
         SSL_free(cSSL)
     }
 }

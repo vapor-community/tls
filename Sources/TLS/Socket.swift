@@ -17,11 +17,6 @@ extension Socket {
     public func setTimeout(_ timeout: Double) throws {
         try socket.setTimeout(timeout)
     }
-
-    ///Sends a shutdown to secure socket
-    public func close() throws {
-        try socket.close()
-    }
 }
 
 // MARK: Init
