@@ -58,7 +58,9 @@ class LiveTests: XCTestCase {
             try socket.connect(servername: "httpbin.org")
             try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
 
+            #if ENABLE_HOSTNAME_VERIFICATION
             XCTFail("Should not have sent.")
+            #endif
         } catch let error as TLSError {
             if error.functionName == "SSL_connect" && error.reason == "certificate verify failed" {
                 // pass

@@ -25,8 +25,8 @@ extension ClientSocket {
             functionName: "SSL_set_fd"
         )
 
-        if context.verifyHost {
-            // print("Warning: Host verification not implemented.")
+        if let servername = servername, context.verifyHost {
+            #if ENABLE_HOSTNAME_VERIFICATION
             let param = SSL_get0_param(ssl)
             X509_VERIFY_PARAM_set_hostflags(
                 param,
@@ -34,6 +34,7 @@ extension ClientSocket {
             )
             X509_VERIFY_PARAM_set1_host(param, servername, 0);
             SSL_set_verify(ssl, SSL_VERIFY_PEER, nil)
+            #endif
         }
 
         try assert(
