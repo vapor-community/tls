@@ -4,9 +4,9 @@ public final class InternetSocket: Socket {
     public let socket: TCPInternetSocket
     public let context: Context
     public var cSSL: CSSL?
-
+    
     public var client: TCPInternetSocket?
-
+    
     public init(_ socket: TCPInternetSocket, _ context: Context) {
         self.socket = socket
         self.context = context
@@ -16,7 +16,7 @@ public final class InternetSocket: Socket {
         try socket.close()
         try client?.close()
     }
-
+    
     deinit {
         SSL_free(cSSL)
     }
@@ -29,11 +29,11 @@ extension InternetSocket: InternetStream {
     public var scheme: String {
         return socket.scheme
     }
-
+    
     public var hostname: String {
         return socket.hostname
     }
-
+    
     public var port: Port {
         return socket.port
     }
@@ -46,3 +46,9 @@ extension InternetSocket: WriteableSocket { }
 
 extension InternetSocket: ClientSocket { }
 extension InternetSocket: ServerSocket { }
+
+extension InternetSocket: DescriptorRepresentable {
+    public func makeDescriptor() -> Descriptor {
+        return socket.descriptor
+    }
+}
