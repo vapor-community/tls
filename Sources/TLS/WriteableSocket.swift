@@ -8,32 +8,20 @@ extension WriteableSocket {
     /// Sends bytes to the secure socket.
     ///
     /// - parameter bytes: An array of bytes to send.
-    public func write(_ bytes: Bytes) throws {
-        var totalBytesSent = 0
-        let buffer = UnsafeBufferPointer<Byte>(start: bytes, count: bytes.count)
-        guard let bufferBaseAddress = buffer.baseAddress else {
-            throw TLSError(
-                functionName: "baseAddress",
-                returnCode: nil,
-                reason: "Could not fetch buffer base address"
+    public func write(max: Int, from buffer: Bytes) throws -> Int {
+        let bytesSent = SSL_write(
+            cSSL,
+            buffer,
+            Int32(max)
+        )
+        if bytesSent <= 0 {
+            throw makeError(
+                functionName: "SSL_write",
+                returnCode: bytesSent
             )
         }
 
-        while totalBytesSent < bytes.count {
-            let bytesSent = SSL_write(
-                cSSL,
-                bufferBaseAddress.advanced(by: totalBytesSent),
-                Int32(bytes.count - totalBytesSent)
-            )
-            if bytesSent <= 0 {
-                throw makeError(
-                    functionName: "SSL_write",
-                    returnCode: bytesSent
-                )
-            }
-
-            totalBytesSent += Int(bytesSent)
-        }
+        return Int(bytesSent)
     }
 
     public func flush() throws {
