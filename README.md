@@ -2,7 +2,7 @@
     <img src="https://cloud.githubusercontent.com/assets/1342803/24754336/518b0936-1ad6-11e7-9a57-23e3d5d24c80.png" width="320" alt="TLS">
     <br>
     <br>
-    <a href="https://docs.vapor.codes/tls/package">
+    <a href="https://docs.vapor.codes/2.0/tls/package">
         <img src="http://img.shields.io/badge/read_the-docs-92A8D1.svg" alt="Documentation">
     </a>
     <a href="http://vapor.team">
