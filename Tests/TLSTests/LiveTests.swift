@@ -25,7 +25,7 @@ class LiveTests: XCTestCase {
             verifyCertificates: false
         )
         try socket.connect(servername: "swift.org")
-        try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
+        _ = try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
 
@@ -40,7 +40,7 @@ class LiveTests: XCTestCase {
 
         try socket.connect(servername: "swift.org")
 
-        try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
+        _ = try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
 
@@ -56,7 +56,7 @@ class LiveTests: XCTestCase {
 
         do {
             try socket.connect(servername: "httpbin.org")
-            try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
+            _ = try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
 
             #if ENABLE_HOSTNAME_VERIFICATION
             XCTFail("Should not have sent.")
@@ -79,7 +79,7 @@ class LiveTests: XCTestCase {
         )
 
         try socket.connect(servername: "nothttpbin.org")
-        try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
+        _ = try socket.write("GET / HTTP/1.1\r\nHost: swift.org\r\n\r\n".makeBytes())
 
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
@@ -94,7 +94,7 @@ class LiveTests: XCTestCase {
         )
 
         try socket.connect(servername: "slack.com")
-        try socket.write("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
+        _ = try socket.write("GET /api/rtm.start?token=xoxb-52115077872-1xDViI7osWlVEyDqwVJqj2x7 HTTP/1.1\r\nHost: slack.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
 
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
@@ -109,7 +109,7 @@ class LiveTests: XCTestCase {
         )
         
         try socket.connect(servername: "api.weixin.qq.com")
-        try socket.write("GET /cgi-bin/token HTTP/1.0\r\n\r\n".makeBytes())
+        _ = try socket.write("GET /cgi-bin/token HTTP/1.0\r\n\r\n".makeBytes())
         
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
@@ -125,7 +125,7 @@ class LiveTests: XCTestCase {
         )
         
         try socket.connect(servername: "maps.googleapis.com")
-        try socket.write("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
+        _ = try socket.write("GET /maps/api/place/textsearch/json?query=restaurants&key=123 HTTP/1.1\r\nHost: maps.googleapis.com\r\nAccept: application/json; charset=utf-8\r\n\r\n".makeBytes())
         
         let received = try socket.read(max: 65_536).makeString()
         try socket.close()
@@ -141,12 +141,12 @@ class LiveTests: XCTestCase {
                 port: 443
             )
             try stream.connect(servername: "connect.icepay.com")
-            try stream.write("GET /plaintext HTTP/1.1".makeBytes())
-            try stream.write("\r\n".makeBytes())
-            try stream.write("Accept: */*".makeBytes())
-            try stream.write("\r\n".makeBytes())
-            try stream.write("Host: connect.icepay.com".makeBytes())
-            try stream.write("\r\n\r\n".makeBytes()) // double line terminator
+            _ = try stream.write("GET /plaintext HTTP/1.1".makeBytes())
+            _ = try stream.write("\r\n".makeBytes())
+            _ = try stream.write("Accept: */*".makeBytes())
+            _ = try stream.write("\r\n".makeBytes())
+            _ = try stream.write("Host: connect.icepay.com".makeBytes())
+            _ = try stream.write("\r\n\r\n".makeBytes()) // double line terminator
 
             let result = try stream.read(max: 2048).makeString()
             XCTAssert(result.contains("404"))
@@ -196,7 +196,7 @@ class LiveTests: XCTestCase {
                 if receivedData != testData {
                     XCTFail("error")
                 }
-                try client.write(receivedData) // mirror data back
+                _ = try client.write(receivedData) // mirror data back
                 try client.close()
             } catch {
                 XCTFail("\(error)")
@@ -215,7 +215,7 @@ class LiveTests: XCTestCase {
         background {
             do {
                 try client.connect(servername: hostname)
-                try client.write(testData)
+                _ = try client.write(testData)
                 var receivedData:[UInt8] = []
                 while receivedData.count < testData.count {
                     let newData = try client.read(max: 65_536)

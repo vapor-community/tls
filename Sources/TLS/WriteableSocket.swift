@@ -9,6 +9,12 @@ extension WriteableSocket {
     ///
     /// - parameter bytes: An array of bytes to send.
     public func write(max: Int, from buffer: Bytes) throws -> Int {
+        guard max > 0 else {
+            // attempts to write something less than 0
+            // will cause an ssl write error
+            return 0
+        }
+
         let bytesSent = SSL_write(
             cSSL,
             buffer,
