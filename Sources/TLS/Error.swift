@@ -52,6 +52,21 @@ extension Socket {
                 reason = "The operation did not complete because an application callback set by SSL_CTX_set_client_cert_cb() has asked to be called again."
             case SSL_ERROR_SYSCALL:
                 reason = String(validatingUTF8: strerror(errno)) ?? "System call error"
+            case SSL_ERROR_SSL:
+                let bio = BIO_new(BIO_s_mem())
+                
+                defer {
+                    BIO_free(bio)
+                }
+                
+                ERR_print_errors(bio)
+                let written = BIO_number_written(bio)
+                
+                var buffer: [Int8] = Array(repeating: 0, count: Int(written) + 1)
+                reason = buffer.withUnsafeMutableBufferPointer { buf in
+                    BIO_read(bio, buf.baseAddress, Int32(written))
+                    return String(validatingUTF8: buf.baseAddress!)
+                }
             default:
                 reason = "A failure in the SSL library occurred."
             }
