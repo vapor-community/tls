@@ -1,5 +1,6 @@
 import CTLS
 import Foundation
+import Dispatch
 
 public typealias CContext = UnsafeMutablePointer<SSL_CTX>
 public typealias CMethod = UnsafePointer<SSL_METHOD>
@@ -12,7 +13,16 @@ public typealias CSSL = UnsafeMutablePointer<SSL>
 /// The context is used to create secure sockets and should
 /// be reused when creating multiple sockets.
 public final class Context {
-    private static var isGloballyInitialized = false
+    /// Dispatch Once is no longer a thing
+    /// globally initialized vars guarantee same thread safety
+    /// https://stackoverflow.com/a/37887068/2611971
+    private static let isGloballyInitialized: Bool = {
+        SSL_library_init()
+        SSL_load_error_strings()
+        OPENSSL_config(nil)
+        OPENSSL_add_all_algorithms_conf()
+        return true
+    }()
 
     public let certificates: Certificates
     public let mode: Mode
@@ -32,13 +42,7 @@ public final class Context {
         verifyCertificates: Bool = true,
         cipherSuite: String? = nil
     ) throws {
-        if !Context.isGloballyInitialized {
-            SSL_library_init()
-            SSL_load_error_strings()
-            OPENSSL_config(nil)
-            OPENSSL_add_all_algorithms_conf()
-            Context.isGloballyInitialized = true
-        }
+        guard Context.isGloballyInitialized else { fatalError() }
         
         let method: CMethod
         switch mode {
