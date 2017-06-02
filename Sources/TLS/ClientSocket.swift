@@ -40,17 +40,18 @@ extension ClientSocket {
         /// https://github.com/vapor/tls/issues/47
         let hostname = servername ?? socket.hostname
         var cName = hostname.utf8CString
-        cName.withUnsafeMutableBytes { name in
+        try cName.withUnsafeMutableBytes { name in
             // SSL_set_tlsext_host_name is a C macro,
             // which is not directly callable in Swift.
             // This is its expanded form.
+            let result = SSL_ctrl(
+                ssl,
+                SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                Int(TLSEXT_NAMETYPE_host_name),
+                name.baseAddress
+            )
             try assert(
-                SSL_ctrl(
-                    ssl,
-                    SSL_CTRL_SET_TLSEXT_HOSTNAME,
-                    Int(TLSEXT_NAMETYPE_host_name),
-                    name.baseAddress
-                ),
+                Int32(result),
                 functionName: "SSL_ctrl"
             )
         }
