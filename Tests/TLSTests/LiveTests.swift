@@ -16,6 +16,7 @@ class LiveTests: XCTestCase {
         ("testGoogleMapsApi", testGoogleMapsApi),
         ("testConnectIcePay", testConnectIcePay),
         ("testServer", testServer),
+        ("testHTTPBinGet", testHTTPBinGet),
     ]
 
     func testNoVerify() throws {
