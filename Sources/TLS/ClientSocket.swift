@@ -44,10 +44,15 @@ extension ClientSocket {
             // SSL_set_tlsext_host_name is a C macro,
             // which is not directly callable in Swift.
             // This is its expanded form.
-            _ = SSL_ctrl(ssl,
-                         SSL_CTRL_SET_TLSEXT_HOSTNAME,
-                         Int(TLSEXT_NAMETYPE_host_name),
-                         name.baseAddress)
+            try assert(
+                SSL_ctrl(
+                    ssl,
+                    SSL_CTRL_SET_TLSEXT_HOSTNAME,
+                    Int(TLSEXT_NAMETYPE_host_name),
+                    name.baseAddress
+                ),
+                functionName: "SSL_ctrl"
+            )
         }
 
         try assert(
