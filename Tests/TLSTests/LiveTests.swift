@@ -234,4 +234,22 @@ class LiveTests: XCTestCase {
             timeout: DispatchTime.init(secondsFromNow: 10)
         )
     }
+
+    func testHTTPBinGet() throws {
+        let stream = try InternetSocket(
+            .client,
+            hostname: "httpbin.org",
+            port: 443
+        )
+        try stream.connect(servername: "httpbin.org")
+        _ = try stream.write("GET /get HTTP/1.1".makeBytes())
+        _ = try stream.write("\r\n".makeBytes())
+        _ = try stream.write("Accept: */*".makeBytes())
+        _ = try stream.write("\r\n".makeBytes())
+        _ = try stream.write("Host: httpbin.org".makeBytes())
+        _ = try stream.write("\r\n\r\n".makeBytes()) // double line terminator
+
+        let result = try stream.read(max: 2048).makeString()
+        XCTAssert(result.contains("200 OK"))
+    }
 }
