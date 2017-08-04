@@ -13,6 +13,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "TLS", dependencies: ["Core", "Sockets", "CTLS"]),
-        .testTarget(name: "TLSTests", dependencies: ["TLSTests"]),
+        .testTarget(name: "TLSTests", dependencies: ["TLS"]),
     ]
 )
