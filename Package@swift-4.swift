@@ -9,10 +9,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/core.git", .upToNextMajor(from: "2.1.1")),
       	.package(url: "https://github.com/vapor/sockets.git", .upToNextMajor(from: "2.1.0")),
-        .package(url: "https://github.com/vapor/ctls.git", .upToNextMajor(from: "1.0.0")),
+        .package(url: "https://github.com/vapor/ctls.git", .branch("swift4")),
     ],
     targets: [
-        .target(name: "TLS", dependencies: ["Core", "Sockets", "CTLS"]),
+        .target(name: "TLS", dependencies: ["Core", "Sockets"]),
         .testTarget(name: "TLSTests", dependencies: ["TLS"]),
     ]
 )
