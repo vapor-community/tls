@@ -12,7 +12,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/ctls.git", .upToNextMajor(from: "1.1.0")),
     ],
     targets: [
-        .target(name: "TLS", dependencies: ["Core", "Sockets"]),
+        .target(name: "TLS", dependencies: ["Core", "CTLS", "Sockets"]),
         .testTarget(name: "TLSTests", dependencies: ["TLS"]),
     ]
 )
