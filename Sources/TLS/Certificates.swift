@@ -51,7 +51,7 @@ public enum Certificates {
 
 extension Certificates {
     public static var openbsd: Certificates {
-        let root = #file.characters
+        let root = #file.toCharacterSequence()
             .split(separator: "/", omittingEmptySubsequences: false)
             .dropLast(3)
             .map { String($0) }
@@ -97,4 +97,16 @@ fileprivate func fileExists(_ path: String) -> Bool {
         
         return access(baseAddress, R_OK) == 0
     }
+}
+
+extension String {
+    #if swift(>=4.0)
+    internal func toCharacterSequence() -> String {
+        return self
+    }
+    #else
+    internal func toCharacterSequence() -> CharacterView {
+        return self.characters
+    }
+    #endif  
 }
