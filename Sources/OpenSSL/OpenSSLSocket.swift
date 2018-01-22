@@ -59,6 +59,13 @@ public final class OpenSSLSocket: TLSSocket {
 
     /// See TLSSocket.read
     public func read(into buffer: UnsafeMutableBufferPointer<UInt8>) throws -> SocketReadStatus {
+        if !handshakeCompleted {
+            try handshake()
+            guard handshakeCompleted else {
+                return .wouldBlock
+            }
+        }
+
         let bytesRead = SSL_read(cSSL, buffer.baseAddress!, Int32(buffer.count))
         if bytesRead <= 0 {
             switch SSL_get_error(cSSL, bytesRead) {
@@ -73,6 +80,13 @@ public final class OpenSSLSocket: TLSSocket {
 
     /// See TLSSocket.write
     public func write(from buffer: UnsafeBufferPointer<UInt8>) throws -> SocketWriteStatus {
+        if !handshakeCompleted {
+            try handshake()
+            guard handshakeCompleted else {
+                return .wouldBlock
+            }
+        }
+
         guard buffer.count > 0 else {
             // attempts to write something less than 0
             // will cause an ssl write error
@@ -89,16 +103,6 @@ public final class OpenSSLSocket: TLSSocket {
     /// See TLSSocket.close
     public func close() {
         tcp.close()
-    }
-
-    /// See DispatchSocket.isPrepared
-    public var isPrepared: Bool {
-        return handshakeCompleted
-    }
-
-    /// See DispatchSocket.prepareSocket
-    public func prepareSocket() throws {
-        try handshake()
     }
 
     /// Runs the SSL handshake, regardless of client or server
