@@ -122,8 +122,8 @@ public final class AppleTLSSocket: TLSSocket {
     }
 
     deinit {
-        ref.deinitialize()
-        ref.deallocate(capacity: 1)
+        ref.deinitialize(count: 1)
+        ref.deallocate()
     }
 }
 
