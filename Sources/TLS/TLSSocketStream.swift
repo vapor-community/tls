@@ -1,12 +1,13 @@
 import Async
+import Bits
 
 /// An async `UnsafeBufferPointer<UInt8>` stream wrapper for `TLSSocket`.
-public final class TLSSocketStream<Socket>: Stream where Socket: TLSSocket {
+public final class TLSSocketStream<Socket>: ByteStream where Socket: TLSSocket {
     /// See `InputStream.Input`
-    public typealias Input = UnsafeBufferPointer<UInt8>
+    public typealias Input = ByteBuffer
 
     /// See `OutputStream.Output`
-    public typealias Output = UnsafeBufferPointer<UInt8>
+    public typealias Output = ByteBuffer
 
     /// Internal socket source stream.
     internal let source: TLSSocketSource<Socket>
@@ -21,7 +22,7 @@ public final class TLSSocketStream<Socket>: Stream where Socket: TLSSocket {
     }
 
     /// See `InputStream.input(_:)`
-    public func input(_ event: InputEvent<UnsafeBufferPointer<UInt8>>) {
+    public func input(_ event: InputEvent<ByteBuffer>) {
         sink.input(event)
     }
 
