@@ -23,7 +23,7 @@ public final class AppleTLSSocket: TLSSocket {
     private let ref: UnsafeMutablePointer<Int32>
 
     /// True if the handshake has completed
-    private var handshakeCompleted: Bool
+    public var handshakeIsComplete: Bool
 
     /// True if the socket has been initialized
     private var initCompleted: Bool
@@ -39,43 +39,29 @@ public final class AppleTLSSocket: TLSSocket {
         let ref = UnsafeMutablePointer<Int32>.allocate(capacity: 1)
         ref.pointee = tcp.descriptor
         self.ref = ref
-        self.handshakeCompleted = false
+        self.handshakeIsComplete = false
         self.initCompleted = false
     }
 
     /// See TLSSocket.read
-    public func read(into buffer: MutableByteBuffer) throws -> SocketReadStatus {
-        if !handshakeCompleted {
-            try handshake()
-            guard handshakeCompleted else {
-                return .wouldBlock
-            }
-        }
-
+    public func read(into buffer: MutableByteBuffer) throws -> TLSSocketStatus {
         var processed = 0
         let status = SSLRead(context, buffer.baseAddress!, buffer.count, &processed)
         switch status {
         case errSecSuccess:
             if processed == 0 { self.close() }
-            return .read(count: processed)
+            return .success(count: processed)
         case errSSLWouldBlock: return .wouldBlock
         default: throw AppleTLSError.secError(status)
         }
     }
 
     /// See TLSSocket.write
-    public func write(from buffer: ByteBuffer) throws -> SocketWriteStatus {
-        if !handshakeCompleted {
-            try handshake()
-            guard handshakeCompleted else {
-                return .wouldBlock
-            }
-        }
-        
+    public func write(from buffer: ByteBuffer) throws -> TLSSocketStatus {
         var processed: Int = 0
         let status = SSLWrite(self.context, buffer.baseAddress!, buffer.count, &processed)
         switch status {
-        case errSecSuccess: return .wrote(count: processed)
+        case errSecSuccess: return .success(count: processed)
         case errSSLWouldBlock: return .wouldBlock
         default: throw AppleTLSError.secError(status)
         }
@@ -88,7 +74,7 @@ public final class AppleTLSSocket: TLSSocket {
     }
 
     /// Runs the SSL handshake, regardless of client or server
-    private func handshake() throws {
+    public func handshake() throws {
         if !initCompleted {
             try initialize()
             initCompleted = true
@@ -96,7 +82,7 @@ public final class AppleTLSSocket: TLSSocket {
 
         let status = SSLHandshake(context)
         switch status {
-        case errSecSuccess: handshakeCompleted = true
+        case errSecSuccess: handshakeIsComplete = true
         case errSSLWouldBlock, errSecIO: break
         default:
             self.close()
