@@ -22,7 +22,7 @@ public final class OpenSSLSocket: TLSSocket {
     private let tcp: TCPSocket
 
     /// True if the handshake has completed
-    private var handshakeCompleted: Bool
+    public var handshakeIsComplete: Bool
 
     /// Create a new OpenSSL socket with the supplied method.
     public init(tcp: TCPSocket, method: OpenSSLMethod, side: OpenSSLSide) throws {
@@ -53,19 +53,12 @@ public final class OpenSSLSocket: TLSSocket {
 
         self.cSSL = ssl
         self.tcp = tcp
-        handshakeCompleted = false
+        handshakeIsComplete = false
         try assert(SSL_set_fd(ssl, tcp.descriptor), identifier: "setDescriptor")
     }
 
     /// See TLSSocket.read
-    public func read(into buffer: UnsafeMutableBufferPointer<UInt8>) throws -> SocketReadStatus {
-        if !handshakeCompleted {
-            try handshake()
-            guard handshakeCompleted else {
-                return .wouldBlock
-            }
-        }
-
+    public func read(into buffer: UnsafeMutableBufferPointer<UInt8>) throws -> TLSSocketStatus {
         let bytesRead = SSL_read(cSSL, buffer.baseAddress!, Int32(buffer.count))
         if bytesRead <= 0 {
             switch SSL_get_error(cSSL, bytesRead) {
@@ -75,29 +68,22 @@ public final class OpenSSLSocket: TLSSocket {
                 throw makeError(status: bytesRead, identifier: "read")
             }
         }
-        return .read(count: Int(bytesRead))
+        return .success(count: Int(bytesRead))
     }
 
     /// See TLSSocket.write
-    public func write(from buffer: UnsafeBufferPointer<UInt8>) throws -> SocketWriteStatus {
-        if !handshakeCompleted {
-            try handshake()
-            guard handshakeCompleted else {
-                return .wouldBlock
-            }
-        }
-
+    public func write(from buffer: UnsafeBufferPointer<UInt8>) throws -> TLSSocketStatus {
         guard buffer.count > 0 else {
             // attempts to write something less than 0
             // will cause an ssl write error
-            return .wrote(count: 0)
+            return .success(count: 0)
         }
 
         let bytesSent = SSL_write(cSSL, buffer.baseAddress!, Int32(buffer.count))
         if bytesSent <= 0 {
             throw makeError(status: bytesSent, identifier: "write")
         }
-        return .wrote(count: Int(bytesSent))
+        return .success(count: Int(bytesSent))
     }
 
     /// See TLSSocket.close
@@ -110,7 +96,7 @@ public final class OpenSSLSocket: TLSSocket {
         let result = SSL_do_handshake(cSSL)
         let code = SSL_get_error(cSSL, result)
         if result >= 0 {
-            handshakeCompleted = true
+            handshakeIsComplete = true
         } else {
             guard
                 code == SSL_ERROR_WANT_READ ||
