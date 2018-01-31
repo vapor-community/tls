@@ -126,9 +126,7 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
 
         if !socket.handshakeIsComplete {
             try! socket.handshake()
-            guard socket.handshakeIsComplete else {
-                return
-            }
+            return
         }
 
         guard inputBuffer != nil else {
