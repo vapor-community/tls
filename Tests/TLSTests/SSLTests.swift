@@ -69,7 +69,10 @@ class SSLTests: XCTestCase {
         do {
             let tcpSocket = try TCPSocket(isNonBlocking: true)
             let tcpClient = try TCPClient(socket: tcpSocket)
-            let tlsSettings = TLSClientSettings()
+            var tlsSettings = TLSClientSettings()
+            
+            tlsSettings.peerDomainName = "httpbin.org"
+            
             #if os(Linux)
             let tlsClient = try OpenSSLClient(tcp: tcpClient, using: tlsSettings)
             #else
