@@ -41,25 +41,26 @@ public enum Certificates {
     }
 
     public static var defaults: Certificates {
-        if let system = system {
-            return system
-        } else {
-            return openbsd
-        }
+		if let system = system { return system }
+		if let openbsd = openbsd { return openbsd }
+		fatalError("No system certificates found")
     }
 }
 
 extension Certificates {
-    public static var openbsd: Certificates {
+    public static var openbsd: Certificates? {
         let root = #file.toCharacterSequence()
             .split(separator: "/", omittingEmptySubsequences: false)
             .dropLast(3)
             .map { String($0) }
             .joined(separator: "/")
+		
+		let filePath = root + "/Certs/openbsd_certs.pem"
+		guard fileExists(filePath) else { return nil }
 
         return .certificateAuthority(
             signature: .signedFile(
-                caCertificateFile: root + "/Certs/openbsd_certs.pem"
+                caCertificateFile: filePath
             )
         )
     }
