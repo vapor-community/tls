@@ -17,7 +17,13 @@ func testHTTPS(hostname: String, request: String) throws -> String {
     tlsSettings.peerDomainName = hostname
 
     #if os(Linux)
-    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: tlsSettings)
+    var configuration = OpenSSLSettings()
+    configuration.ciphers = [
+        .default,
+        .not(.ecdh)
+    ]
+    
+    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: tlsSettings, configuration: configuration)
     #else
     let tlsClient = try AppleTLSClient(tcp: tcpClient, using: tlsSettings)
     #endif

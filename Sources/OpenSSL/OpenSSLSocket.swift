@@ -25,10 +25,10 @@ public final class OpenSSLSocket: TLSSocket {
     public var handshakeIsComplete: Bool
 
     /// Create a new OpenSSL socket with the supplied method.
-    public init(tcp: TCPSocket, method: OpenSSLMethod, side: OpenSSLSide) throws {
+    public init(tcp: TCPSocket, method: OpenSSLMethod, side: OpenSSLSide, settings: OpenSSLSettings) throws {
         let method = method.method(side: .client)
 
-        guard OpenSSLSettings.initialized, let context = SSL_CTX_new(method) else {
+        guard OpenSSLGlobals.initialized, let context = SSL_CTX_new(method) else {
             throw OpenSSLError(identifier: "createContext", reason: "SSL context creation failed.")
         }
 
@@ -42,8 +42,10 @@ public final class OpenSSLSocket: TLSSocket {
             nil
         )
         SSL_CTX_set_verify(context, SSL_VERIFY_NONE, nil)
+        
+        let ciphers = settings.ciphers.map { $0.string }.joined(separator: ":")
 
-        guard SSL_CTX_set_cipher_list(context, "DEFAULT") == 1 else {
+        guard SSL_CTX_set_cipher_list(context, ciphers) == 1 else {
             throw OpenSSLError(identifier: "setCipherList", reason: "Setting cipher list on SSL context failed.")
         }
 
@@ -95,7 +97,8 @@ public final class OpenSSLSocket: TLSSocket {
     public func handshake() throws {
         let result = SSL_do_handshake(cSSL)
         let code = SSL_get_error(cSSL, result)
-        if result >= 0 {
+        
+        if result > 0 {
             handshakeIsComplete = true
         } else {
             guard

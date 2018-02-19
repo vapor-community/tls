@@ -15,8 +15,12 @@ public final class OpenSSLClient: TLSClient {
     private let tcp: TCPClient
 
     /// Create a new `OpenSSLClient`
-    public init(tcp: TCPClient, using settings: TLSClientSettings) throws {
-        let socket = try OpenSSLSocket(tcp: tcp.socket, method: .tls1_2, side: .client)
+    public init(
+        tcp: TCPClient,
+        using settings: TLSClientSettings,
+        configuration: OpenSSLSettings = OpenSSLSettings()
+    ) throws {
+        let socket = try OpenSSLSocket(tcp: tcp.socket, method: .ssl23, side: .client, settings: configuration)
         self.settings = settings
         self.socket = socket
         self.tcp = tcp

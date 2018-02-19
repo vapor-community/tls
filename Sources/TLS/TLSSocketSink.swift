@@ -125,7 +125,11 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
         }
 
         if !socket.handshakeIsComplete {
-            try! socket.handshake()
+            do {
+                try socket.handshake()
+            } catch {
+                socket.close()
+            }
             return
         }
 

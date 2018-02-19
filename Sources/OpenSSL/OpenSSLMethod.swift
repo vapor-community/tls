@@ -1,3 +1,4 @@
+import TLS
 import COpenSSL
 
 public enum OpenSSLSide {
@@ -31,7 +32,15 @@ public enum OpenSSLMethod {
     }
 }
 
-public enum OpenSSLSettings {
+public struct OpenSSLSettings {
+    public var ciphers: [OpenSSLCipher]
+    
+    public init() {
+        self.ciphers = [.default]
+    }
+}
+
+internal enum OpenSSLGlobals {
     internal static var initialized: Bool = {
         SSL_library_init()
         SSL_load_error_strings()
