@@ -29,7 +29,7 @@ let package = Package(
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["AppleTLS", "TLS"]))
 #else
     package.products.append(.library(name: "OpenSSL", targets: ["OpenSSL"]))
-    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", .exact("1.0.0-alpha.1")))
+    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", "1.0.0-beta.1"..<"1.0.0-beta.2"))
     package.targets.append(.target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"]))
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["OpenSSL", "TLS"]))
 #endif
