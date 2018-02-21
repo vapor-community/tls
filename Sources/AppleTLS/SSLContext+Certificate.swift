@@ -16,12 +16,12 @@ extension SSLContext {
     func setCertificate(to certificatePath: String) throws {
         // Load the certificate
         guard let certificateData = FileManager.default.contents(atPath: certificatePath) else {
-            throw AppleTLSError(identifier: "certificateNotFound", reason: "No certificate was found at path \(certificatePath)")
+            throw AppleTLSError(identifier: "certificateNotFound", reason: "No certificate was found at path \(certificatePath)", source: .capture())
         }
         
         // Process the certificate into one usable by the Security library
         guard let certificate = SecCertificateCreateWithData(nil, certificateData as CFData) else {
-            throw AppleTLSError(identifier: "invalidCertificate", reason: "Invalid certificate at path \(certificatePath)")
+            throw AppleTLSError(identifier: "invalidCertificate", reason: "Invalid certificate at path \(certificatePath)", source: .capture())
         }
         
         var ref: SecIdentity?
@@ -29,18 +29,18 @@ extension SSLContext {
         // Applies the certificate
         var status = SecIdentityCreateWithCertificate(nil, certificate, &ref)
         guard status == 0 else {
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
         status = SSLSetCertificate(self, [ref as Any, certificate] as CFArray)
         guard status == 0 else {
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
     }
     
     func setDomainName(to domain: String) throws {
         let status = SSLSetPeerDomainName(self, domain, domain.utf8.count)
         guard status == 0 else {
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
     }
 }

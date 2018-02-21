@@ -24,10 +24,17 @@ public final class OpenSSLClient: TLSClient {
 
     /// See TLSClient.connect
     public func connect(hostname: String, port: UInt16) throws {
-        var hostname = hostname
+        var cName = hostname.utf8CString
         try tcp.connect(hostname: hostname, port: port)
-        SSL_ctrl(socket.cSSL, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), &hostname)
-        SSL_connect(socket.cSSL)
+        try cName.withUnsafeMutableBytes { name in
+            let res = SSL_ctrl(socket.cSSL, SSL_CTRL_SET_TLSEXT_HOSTNAME, Int(TLSEXT_NAMETYPE_host_name), name.baseAddress)
+            try socket.assert(Int32(res), identifier: "sni", source: .capture())
+        }
+        let res = SSL_connect(socket.cSSL)
+        switch SSL_get_error(socket.cSSL, res) {
+        case SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE, SSL_ERROR_WANT_CONNECT: break // wouldblock
+        default: throw socket.makeError(status: res, identifier: "connect", source: .capture())
+        }
     }
 
     /// See TLSClient.close
