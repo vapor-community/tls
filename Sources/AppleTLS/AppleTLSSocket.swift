@@ -31,7 +31,7 @@ public final class AppleTLSSocket: TLSSocket {
     /// Creates an SSL socket
     public init(tcp: TCPSocket, protocolSide: SSLProtocolSide) throws {
         guard let context = SSLCreateContext(nil, protocolSide, .streamType) else {
-            throw AppleTLSError(identifier: "cannotCreateContext", reason: "Could not create SSL context")
+            throw AppleTLSError(identifier: "cannotCreateContext", reason: "Could not create SSL context", source: .capture())
         }
         self.tcp = tcp
         self.context = context
@@ -52,7 +52,7 @@ public final class AppleTLSSocket: TLSSocket {
             if processed == 0 { self.close() }
             return .success(count: processed)
         case errSSLWouldBlock: return .wouldBlock
-        default: throw AppleTLSError.secError(status)
+        default: throw AppleTLSError.secError(status, source: .capture())
         }
     }
 
@@ -63,7 +63,7 @@ public final class AppleTLSSocket: TLSSocket {
         switch status {
         case errSecSuccess: return .success(count: processed)
         case errSSLWouldBlock: return .wouldBlock
-        default: throw AppleTLSError.secError(status)
+        default: throw AppleTLSError.secError(status, source: .capture())
         }
     }
 
@@ -86,7 +86,7 @@ public final class AppleTLSSocket: TLSSocket {
         case errSSLWouldBlock, errSecIO: break
         default:
             self.close()
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
 
     }
@@ -97,13 +97,13 @@ public final class AppleTLSSocket: TLSSocket {
         var status = SSLSetIOFuncs(context, readSSL, writeSSL)
 
         guard status == 0 else {
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
 
         // Adds the file descriptor to this connection
         status = SSLSetConnection(context, ref)
         guard status == 0 else {
-            throw AppleTLSError.secError(status)
+            throw AppleTLSError.secError(status, source: .capture())
         }
     }
 

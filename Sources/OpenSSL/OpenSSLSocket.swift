@@ -1,5 +1,6 @@
 import Async
 import Bits
+import Debugging
 import COpenSSL
 import COperatingSystem
 import TCP
@@ -29,7 +30,7 @@ public final class OpenSSLSocket: TLSSocket {
         let method = method.method(side: .client)
 
         guard OpenSSLSettings.initialized, let context = SSL_CTX_new(method) else {
-            throw OpenSSLError(identifier: "createContext", reason: "SSL context creation failed.")
+            throw OpenSSLError(identifier: "createContext", reason: "SSL context creation failed.", source: .capture())
         }
 
         SSL_CTX_ctrl(context, SSL_CTRL_MODE, SSL_MODE_AUTO_RETRY, nil)
@@ -44,17 +45,17 @@ public final class OpenSSLSocket: TLSSocket {
         SSL_CTX_set_verify(context, SSL_VERIFY_NONE, nil)
 
         guard SSL_CTX_set_cipher_list(context, "DEFAULT") == 1 else {
-            throw OpenSSLError(identifier: "setCipherList", reason: "Setting cipher list on SSL context failed.")
+            throw OpenSSLError(identifier: "setCipherList", reason: "Setting cipher list on SSL context failed.", source: .capture())
         }
 
         guard let ssl = SSL_new(context) else {
-            throw OpenSSLError(identifier: "createSession", reason: "Creating SSL session failed.")
+            throw OpenSSLError(identifier: "createSession", reason: "Creating SSL session failed.", source: .capture())
         }
 
         self.cSSL = ssl
         self.tcp = tcp
         handshakeIsComplete = false
-        try assert(SSL_set_fd(ssl, tcp.descriptor), identifier: "setDescriptor")
+        try assert(SSL_set_fd(ssl, tcp.descriptor), identifier: "setDescriptor", source: .capture())
     }
 
     /// See TLSSocket.read
@@ -65,7 +66,7 @@ public final class OpenSSLSocket: TLSSocket {
             case SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE, SSL_ERROR_WANT_CONNECT:
                 return .wouldBlock
             default:
-                throw makeError(status: bytesRead, identifier: "read")
+                throw makeError(status: bytesRead, identifier: "read", source: .capture())
             }
         }
         return .success(count: Int(bytesRead))
@@ -81,7 +82,12 @@ public final class OpenSSLSocket: TLSSocket {
 
         let bytesSent = SSL_write(cSSL, buffer.baseAddress!, Int32(buffer.count))
         if bytesSent <= 0 {
-            throw makeError(status: bytesSent, identifier: "write")
+            switch SSL_get_error(cSSL, bytesSent) {
+            case SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE, SSL_ERROR_WANT_CONNECT:
+                return .wouldBlock
+            default:
+                throw makeError(status: bytesSent, identifier: "write", source: .capture())
+            }
         }
         return .success(count: Int(bytesSent))
     }
@@ -103,7 +109,7 @@ public final class OpenSSLSocket: TLSSocket {
                 code == SSL_ERROR_WANT_WRITE ||
                 code == SSL_ERROR_WANT_CONNECT
             else {
-                throw makeError(status: result, identifier: "handshake")
+                throw makeError(status: result, identifier: "handshake", source: .capture())
             }
         }
     }
@@ -116,35 +122,26 @@ public final class OpenSSLSocket: TLSSocket {
 
 extension OpenSSLSocket {
     /// Asserts an OpenSSL method returns succesfully or throws an error.
-    fileprivate func assert(
+    internal func assert(
         _ returnCode: Int32,
         identifier: String,
-        file: String = #file,
-        function: String = #function,
-        line: UInt = #line,
-        column: UInt = #column
+        source: SourceLocation
     ) throws {
         if returnCode != 1 {
             throw makeError(
                 status: returnCode,
                 identifier: identifier,
-                file: file,
-                function: function,
-                line: line,
-                column: column
+                source: source
             )
         }
     }
 
     /// Creates an error for a supplied return code using
     /// the OpenSSL socket's current SSL session.
-    fileprivate func makeError(
+    internal func makeError(
         status returnCode: Int32,
         identifier: String,
-        file: String = #file,
-        function: String = #function,
-        line: UInt = #line,
-        column: UInt = #column
+        source: SourceLocation
     ) -> OpenSSLError {
         let reason: String
 
@@ -191,10 +188,7 @@ extension OpenSSLSocket {
         return .init(
             identifier: identifier,
             reason: reason,
-            file: file,
-            function: function,
-            line: line,
-            column: column
+            source: source
         )
     }
 }
