@@ -3,7 +3,7 @@ import Debugging
 import Security
 
 /// An SSL Error related to Apple's Security libraries
-public struct AppleTLSError: Traceable, Debuggable, Helpable, Swift.Error, Encodable {
+public struct AppleTLSError: Debuggable {
     public static let readableName = "Apple TLS Error"
     public let identifier: String
     public var reason: String

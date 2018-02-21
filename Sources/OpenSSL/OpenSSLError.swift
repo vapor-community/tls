@@ -3,7 +3,7 @@ import Debugging
 import Foundation
 
 /// An SSL Error related to Apple's Security libraries
-public struct OpenSSLError: Traceable, Debuggable, Helpable, Swift.Error, Encodable {
+public struct OpenSSLError: Debuggable, Encodable {
     public static let readableName = "OpenSSL Error"
     public let identifier: String
     public var reason: String
