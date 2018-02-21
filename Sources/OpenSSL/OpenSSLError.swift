@@ -3,14 +3,11 @@ import Debugging
 import Foundation
 
 /// An SSL Error related to Apple's Security libraries
-public struct OpenSSLError: Traceable, Debuggable, Helpable, Swift.Error, Encodable {
+public struct OpenSSLError: Debuggable {
     public static let readableName = "OpenSSL Error"
     public let identifier: String
     public var reason: String
-    public var file: String
-    public var function: String
-    public var line: UInt
-    public var column: UInt
+    public var sourceLocation: SourceLocation?
     public var stackTrace: [String]
     public var possibleCauses: [String]
     public var suggestedFixes: [String]
@@ -21,17 +18,11 @@ public struct OpenSSLError: Traceable, Debuggable, Helpable, Swift.Error, Encoda
         reason: String,
         possibleCauses: [String] = [],
         suggestedFixes: [String] = [],
-        file: String = #file,
-        function: String = #function,
-        line: UInt = #line,
-        column: UInt = #column
+        source: SourceLocation
     ) {
         self.identifier = identifier
         self.reason = reason
-        self.file = file
-        self.function = function
-        self.line = line
-        self.column = column
+        self.sourceLocation = source
         self.stackTrace = OpenSSLError.makeStackTrace()
         self.possibleCauses = possibleCauses
         self.suggestedFixes = suggestedFixes
