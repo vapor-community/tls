@@ -4,21 +4,19 @@ import PackageDescription
 let package = Package(
     name: "TLS",
     products: [
-        .library(name: "ServerSecurity", targets: ["ServerSecurity"]),
         .library(name: "TLS", targets: ["TLS"]),
     ],
     dependencies: [
-        // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", "1.0.0-beta.1"..<"1.0.0-beta.2"),
+        // ⏱ Promises and reactive-streams in Swift built for high-performance and scalability.
+        .package(url: "https://github.com/vapor/async.git", from: "1.0.0-rc"),
 
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", "3.0.0-beta.2"..<"3.0.0-beta.3"),
+        // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc"),
 
-        // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", "3.0.0-beta.3"..<"3.0.0-beta.4"),
+        // 🔌 Non-blocking TCP socket layer, with event-driven server and client.
+        .package(url: "https://github.com/vapor/sockets.git", from: "3.0.0-rc"),
     ],
     targets: [
-        .target(name: "ServerSecurity", dependencies: ["COperatingSystem", "TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
     ]
 )
@@ -29,7 +27,7 @@ let package = Package(
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["AppleTLS", "TLS"]))
 #else
     package.products.append(.library(name: "OpenSSL", targets: ["OpenSSL"]))
-    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", "1.0.0-beta.1"..<"1.0.0-beta.2"))
+    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", from: "1.0.0-rc"))
     package.targets.append(.target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"]))
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["OpenSSL", "TLS"]))
 #endif
