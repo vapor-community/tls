@@ -1,9 +1,9 @@
 <p align="center">
-    <img src="https://cloud.githubusercontent.com/assets/1342803/24754336/518b0936-1ad6-11e7-9a57-23e3d5d24c80.png" width="320" alt="TLS">
+    <img src="https://user-images.githubusercontent.com/1342803/36576372-51763fb0-181e-11e8-929f-a619156f092a.png" height="64" alt="TLS">
     <br>
     <br>
-    <a href="https://docs.vapor.codes/2.0/tls/package">
-        <img src="http://img.shields.io/badge/read_the-docs-92A8D1.svg" alt="Documentation">
+    <a href="https://docs.vapor.codes/3.0/">
+        <img src="http://img.shields.io/badge/read_the-docs-2196f3.svg" alt="Documentation">
     </a>
     <a href="http://vapor.team">
         <img src="http://vapor.team/badge.svg" alt="Slack Team">
@@ -15,6 +15,6 @@
         <img src="https://circleci.com/gh/vapor/tls.svg?style=shield" alt="Continuous Integration">
     </a>
     <a href="https://swift.org">
-        <img src="http://img.shields.io/badge/swift-3.1-brightgreen.svg" alt="Swift 3.1">
+        <img src="http://img.shields.io/badge/swift-4.1-brightgreen.svg" alt="Swift 4.1">
     </a>
 </p>
