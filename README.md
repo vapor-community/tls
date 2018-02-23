@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://user-images.githubusercontent.com/1342803/36576318-da206bc0-181d-11e8-9a58-6c9d7b7255eb.png" height="64" alt="TLS">
+    <img src="https://user-images.githubusercontent.com/1342803/36576372-51763fb0-181e-11e8-929f-a619156f092a.png" height="64" alt="TLS">
     <br>
     <br>
     <a href="https://docs.vapor.codes/3.0/">
