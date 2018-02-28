@@ -44,6 +44,7 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
 
     /// Creates a new `SocketSource`
     internal init(socket: Socket, on worker: Worker, bufferSize: Int) {
+        DEBUG("TLSSocketSource.init(bufferSize: \(bufferSize))")
         self.socket = socket
         self.eventLoop = worker.eventLoop
         self.isClosed = false
@@ -58,17 +59,20 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
 
     /// See OutputStream.output
     public func output<S>(to inputStream: S) where S: Async.InputStream, S.Input == UnsafeBufferPointer<UInt8> {
+        DEBUG("TLSSocketSource.output<\(S.self)>(to: \(inputStream))")
         downstream = AnyInputStream(inputStream)
         resumeIfSuspended()
     }
 
     /// Cancels reading
     public func close() {
+        DEBUG("TLSSocketSource.close()")
         guard !isClosed else {
             return
         }
         guard let readSource = self.readSource else {
-            fatalError("SocketSource readSource illegally nil during close.")
+            ERROR("SocketSource readSource illegally nil during close.")
+            return
         }
         readSource.cancel()
         socket.close()
@@ -82,11 +86,15 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
     /// important: the socket _must_ be ready to read data
     /// as indicated by a read source.
     private func readData() {
+        DEBUG("TLSSocketSource.readData()")
         guard let downstream = self.downstream else {
-            fatalError("Unexpected nil downstream on SocketSource during readData.")
+            ERROR("Unexpected nil downstream on SocketSource during readData.")
+            return
         }
+
         do {
             let read = try socket.read(into: buffer)
+            DEBUG("TLSSocketSource.socket.read() -> \(read)")
             switch read {
             case .success(let count):
                 guard count > 0 else {
@@ -95,23 +103,15 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
                 }
 
                 let view = UnsafeBufferPointer<UInt8>(start: buffer.baseAddress, count: count)
+                DEBUG("TLSSocketSource.view = \(String(bytes: view, encoding: .ascii) ?? "nil")")
                 downstreamIsReady = false
                 let promise = Promise(Void.self)
                 downstream.input(.next(view, promise))
                 promise.future.addAwaiter { result in
+                    DEBUG("TLSSocketSource.downstream.input.future.complete(\(result)) [cancelIsPending: \(self.cancelIsPending)]")
                     switch result {
                     case .error(let e): downstream.error(e)
-                    case .expectation:
-                        if self.cancelIsPending {
-                            // don't both resuming source, it's cancelled.
-                            // continue to read until 0
-                            self.readData()
-                        } else {
-                            // not cancelled yet, just resume the source instead
-                            // of trying to read again to relieve stack pressure
-                            self.downstreamIsReady = true
-                            self.resumeIfSuspended()
-                        }
+                    case .expectation: self.readData()
                     }
                 }
             case .wouldBlock:
@@ -126,6 +126,7 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
 
     /// Called when the read source signals.
     private func readSourceSignal(isCancelled: Bool) {
+        DEBUG("TLSSocketSource.readSourceSignal(\(isCancelled))")
         guard !isCancelled else {
             // source is cancelled, we will never receive signals again
             cancelIsPending = true
@@ -145,8 +146,10 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
             excessSignalCount = excessSignalCount &+ 1
             if excessSignalCount >= maxExcessSignalCount {
                 guard let readSource = self.readSource else {
-                    fatalError("SocketSource readSource illegally nil during signal.")
+                    ERROR("TLSSocketSource readSource illegally nil during signal.")
+                    return
                 }
+                DEBUG("TLSSocketSource.suspend()")
                 readSource.suspend()
                 sourceIsSuspended = true
             }
@@ -160,12 +163,14 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
 
     /// Resumes the readSource if it was currently suspended.
     private func resumeIfSuspended() {
+        DEBUG("TLSSocketSource.resumeIfSuspended() [sourceIsSuspended: \(sourceIsSuspended)]")
         guard sourceIsSuspended else {
             return
         }
 
         guard let readSource = self.readSource else {
-            fatalError("SocketSource readSource illegally nil on resumeIfSuspended.")
+            ERROR("SocketSource readSource illegally nil on resumeIfSuspended.")
+            return
         }
         sourceIsSuspended = false
         readSource.resume()

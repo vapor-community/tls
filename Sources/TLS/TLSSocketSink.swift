@@ -36,6 +36,7 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
 
     /// Creates a new `SocketSink`
     internal init(socket: Socket, on worker: Worker) {
+        DEBUG("TLSSocketSink.init()")
         self.socket = socket
         self.eventLoop = worker.eventLoop
         self.inputBuffer = nil
@@ -48,15 +49,18 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
 
     /// See InputStream.input
     public func input(_ event: InputEvent<UnsafeBufferPointer<UInt8>>) {
+        DEBUG("TLSSocketSink.input(\(event))")
         // update variables
         switch event {
         case .next(let input, let ready):
             guard inputBuffer == nil else {
-                fatalError("SocketSink upstream is illegally overproducing input buffers.")
+                ERROR("SocketSink upstream is illegally overproducing input buffers.")
+                return
             }
             inputBuffer = input
             guard currentReadyPromise == nil else {
-                fatalError("SocketSink currentReadyPromise illegally not nil during input.")
+                ERROR("SocketSink currentReadyPromise illegally not nil during input.")
+                return
             }
             currentReadyPromise = ready
             resumeIfSuspended()
@@ -64,17 +68,19 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
             close()
         case .error(let e):
             close()
-            fatalError("\(e)")
+            ERROR("\(e)")
         }
     }
 
     /// Cancels reading
     public func close() {
+        DEBUG("TLSSocketSink.close()")
         guard !isClosed else {
             return
         }
         guard let writeSource = self.writeSource else {
-            fatalError("SocketSink writeSource illegally nil during close.")
+            ERROR("SocketSink writeSource illegally nil during close.")
+            return
         }
         writeSource.cancel()
         socket.close()
@@ -84,18 +90,21 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
 
     /// Writes the buffered data to the socket.
     private func writeData(ready: Promise<Void>) {
+        DEBUG("TLSSocketSink.writeData()")
         do {
             guard let buffer = self.inputBuffer else {
-                fatalError("Unexpected nil SocketSink inputBuffer during writeData")
+                ERROR("Unexpected nil SocketSink inputBuffer during writeData")
+                return
             }
 
             let write = try socket.write(from: buffer)
+            DEBUG("TLSSocketSink.socket.write() -> \(write)")
             switch write {
             case .success(let count):
                 switch count {
                 case buffer.count:
                     self.inputBuffer = nil
-                    ready.complete()
+                    ready.complete(onNextTick: eventLoop)
                 default:
                     inputBuffer = UnsafeBufferPointer<UInt8>(
                         start: buffer.baseAddress?.advanced(by: count),
@@ -106,7 +115,8 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
             case .wouldBlock:
                 resumeIfSuspended()
                 guard currentReadyPromise == nil else {
-                    fatalError("SocketSink currentReadyPromise illegally not nil during wouldBlock.")
+                    ERROR("SocketSink currentReadyPromise illegally not nil during wouldBlock.")
+                    return
                 }
                 currentReadyPromise = ready
             }
@@ -118,6 +128,7 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
 
     /// Called when the write source signals.
     private func writeSourceSignal(isCancelled: Bool) {
+        DEBUG("TLSSocketSink.writeSourceSignal(\(isCancelled))")
         guard !isCancelled else {
             // source is cancelled, we will never receive signals again
             close()
@@ -134,8 +145,10 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
             excessSignalCount = excessSignalCount &+ 1
             if excessSignalCount >= maxExcessSignalCount {
                 guard let writeSource = self.writeSource else {
-                    fatalError("SocketSink writeSource illegally nil during signal.")
+                    ERROR("SocketSink writeSource illegally nil during signal.")
+                    return
                 }
+                DEBUG("TLSSocketSink.suspend()")
                 writeSource.suspend()
                 sourceIsSuspended = true
             }
@@ -143,19 +156,22 @@ public final class TLSSocketSink<Socket>: Async.InputStream where Socket: TLSSoc
         }
 
         guard let ready = currentReadyPromise else {
-            fatalError("SocketSink currentReadyPromise illegaly nil during signal.")
+            ERROR("SocketSink currentReadyPromise illegaly nil during signal.")
+            return
         }
         currentReadyPromise = nil
         writeData(ready: ready)
     }
 
     private func resumeIfSuspended() {
+        DEBUG("TLSSocketSink.resumeIfSuspended()")
         guard sourceIsSuspended else {
             return
         }
 
         guard let writeSource = self.writeSource else {
-            fatalError("SocketSink writeSource illegally nil during resumeIfSuspended.")
+            ERROR("SocketSink writeSource illegally nil during resumeIfSuspended.")
+            return
         }
         sourceIsSuspended = false
         // start listening for ready notifications
