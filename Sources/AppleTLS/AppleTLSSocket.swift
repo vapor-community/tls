@@ -47,7 +47,6 @@ public final class AppleTLSSocket: TLSSocket {
     public func read(into buffer: MutableByteBuffer) throws -> TLSSocketStatus {
         var processed = 0
         let status = SSLRead(context, buffer.baseAddress!, buffer.count, &processed)
-        print("PROCESSED: \(processed)")
         switch status {
         case errSecSuccess:
             if processed == 0 { self.close() }
