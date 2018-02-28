@@ -137,7 +137,11 @@ public final class TLSSocketSource<Socket>: Async.OutputStream where Socket: TLS
         }
 
         if !socket.handshakeIsComplete {
-            try! socket.handshake()
+            do {
+                try socket.handshake()
+            } catch {
+                ERROR("\(error)")
+            }
             return
         }
 
