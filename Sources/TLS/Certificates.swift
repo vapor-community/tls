@@ -75,6 +75,19 @@ extension Certificates {
             "/system/etc/security/cacerts"        // Android
         ]
 
+        #if swift(>=4.1)
+        return paths.compactMap { (path: String) -> Certificates? in
+            guard fileExists(path) else {
+                return nil
+            }
+            
+            return .certificateAuthority(
+                signature: .signedFile(
+                    caCertificateFile: path
+                )
+            )
+        }.first
+        #else
         return paths.flatMap { (path: String) -> Certificates? in
             guard fileExists(path) else {
                 return nil
@@ -86,6 +99,7 @@ extension Certificates {
                 )
             )
         }.first
+        #endif
     }
 }
 
